@@ -1,14 +1,13 @@
 from asyncio import AbstractEventLoop
 
-from aiomysql import create_pool
-from motor.motor_asyncio import AsyncIOMotorClient
+import aiomysql
+from aiomysql import Connection
 
 
 async def get_my_sql_db_connection(
     host: str, port: int, user: str, password: str, db: str, loop: AbstractEventLoop
-) -> AsyncIOMotorClient:
-    pool = await create_pool(
+) -> Connection:
+    connection = await aiomysql.connect(
         host=host, port=port, user=user, password=password, db=db, loop=loop
     )
-    async with pool.acquire() as conn:
-        yield conn
+    return connection

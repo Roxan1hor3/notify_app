@@ -1,9 +1,12 @@
 from abc import ABC
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from typing import Self, Type
 
+import aiomysql
 from aiomysql import Connection
-from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
+
+from src.notify.adapters.queries.base import BaseQueriesStorage
 
 
 class BaseRepository(ABC):
@@ -12,8 +15,8 @@ class BaseRepository(ABC):
 
 
 class BaseMySqlRepo(BaseRepository):
-    MODEL: Type[BaseMySqlEntityModel]
-    query_storage = BaseMySqlQueries()
+    MODEL: Type[BaseModel]
+    query_storage = BaseQueriesStorage()
     connection: Connection
 
     def __init__(self) -> None:
@@ -21,13 +24,14 @@ class BaseMySqlRepo(BaseRepository):
         self._collection = None
 
     @classmethod
-    async def create_repo(cls, session: AsyncSession) -> Self:
+    async def create_repo(cls, connection: Connection) -> Self:
         """Asynchronous repository initialization"""
         repo = cls()
-        repo.session = session
+        repo.connection = connection
         return repo
 
-    @contextmanager
+    @asynccontextmanager
     async def get_cursor(self) -> None:
-        async with self.connection.cursor() as cur:
-            yield cur
+        cursor = await self.connection.cursor(aiomysql.DictCursor)
+        yield cursor
+        await cursor.close()

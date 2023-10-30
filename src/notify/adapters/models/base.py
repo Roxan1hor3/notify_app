@@ -15,7 +15,7 @@ class RetrieveManyArgs(BaseArgs):
     ordering: str | None = None
     offset: int
     limit: int
-    match_paramws: Any = None
+    match_params: Any = None
 
     @field_validator("match_params", mode="after")
     def validate_match_params(cls, val):

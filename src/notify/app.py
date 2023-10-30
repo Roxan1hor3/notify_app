@@ -1,7 +1,12 @@
+from asyncio import get_running_loop
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from src.notify.api.dependencies import services
+from src.notify.api.v1.router import v1_router
 from src.notify.config import get_settings
+from src.notify.extensions.db import get_my_sql_db_connection
 
 settings = get_settings()
 
@@ -46,5 +51,13 @@ def register_events(app: FastAPI):
     @app.on_event("startup")
     async def init_service_manager():
         await services.init_service_manager(
-            settings=settings, db_connection=get_db_connection(settings.DB_URL)
+            settings=settings,
+            my_sql_connection=await get_my_sql_db_connection(
+                user=settings.DB_USER,
+                host=settings.DB_HOST,
+                port=settings.DB_PORT,
+                db=settings.DB_NAME,
+                password=settings.DB_PASSWORD,
+                loop=get_running_loop(),
+            ),
         )

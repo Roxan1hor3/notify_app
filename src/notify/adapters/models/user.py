@@ -32,3 +32,12 @@ class User(BaseModel):
     comment: str
     lstate: int
     detail_traf: int
+
+
+class UserFilter(BaseModel):
+    group_ids: list[int] | None = None
+    balance_gte: float | None = None
+    balance_lte: float | None = None
+    user_active: bool | None = None
+    fee_more_than_balance: bool | None = None
+    equipment_delivered: bool | None = None

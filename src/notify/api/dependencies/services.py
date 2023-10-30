@@ -1,4 +1,9 @@
+from aiomysql import Connection
 from fastapi import Depends
+
+from src.notify.adapters.services.user_service import UserService
+from src.notify.api.dependencies.common import get_my_sql_db_conn
+from src.notify.config import Settings, get_settings
 
 
 class ServiceManager:
@@ -7,21 +12,18 @@ class ServiceManager:
     async def create(
         self,
         settings: Settings,
-        db_connection: AsyncIOMotorDatabase,
+        my_sql_connection: Connection,
     ) -> None:
         self._user_service = await self.create_user_service(
-            settings=settings, db_connection=db_connection
+            settings=settings, my_sql_connection=my_sql_connection
         )
 
     async def create_user_service(
-        self, settings: Settings, db_connection: AsyncIOMotorDatabase
+        self, my_sql_connection: Connection, settings: Settings
     ) -> UserService:
         if self._user_service is None:
             self._user_service = await UserService.create_service(
-                db_connection,
-                settings.STATIC_DIR,
-                settings.MERCHANT_INFO,
-                settings.GOOGLE_SERVICE_ACCOUNT_INFO,
+                my_sql_connection, settings.STATIC_DIR
             )
         return self._user_service
 
@@ -31,15 +33,17 @@ service_manager = ServiceManager()
 
 async def init_service_manager(
     settings: Settings,
-    db_connection: AsyncIOMotorDatabase,
+    my_sql_connection: Connection,
 ):
-    return await service_manager.create(settings=settings, db_connection=db_connection)
+    return await service_manager.create(
+        settings=settings, my_sql_connection=my_sql_connection
+    )
 
 
 async def get_user_service(
-    db_connection: AsyncIOMotorDatabase = Depends(get_db_conn),
+    my_sql_connection: Connection = Depends(get_my_sql_db_conn),
     settings: Settings = Depends(get_settings),
 ) -> UserService:
     return await service_manager.create_user_service(
-        settings=settings, db_connection=db_connection
+        settings=settings, my_sql_connection=my_sql_connection
     )
