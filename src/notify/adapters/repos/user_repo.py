@@ -1,3 +1,4 @@
+
 from src.notify.adapters.models.user import User, UserFilter
 from src.notify.adapters.queries.users_query import UserQueryStorage
 from src.notify.adapters.repos.base import BaseMySqlRepo
@@ -28,4 +29,5 @@ class UsersRepo(BaseMySqlRepo):
             await cur.execute(
                 self.query_storage.get_users_count(_filter=_filter).get_sql()
             )
-            return await cur.fetchall()
+            result = await cur.fetchall()
+            return result[0]["count"]

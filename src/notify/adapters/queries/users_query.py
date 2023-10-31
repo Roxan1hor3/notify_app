@@ -1,5 +1,6 @@
+from pprint import pprint
 
-from pypika import Query, Table, functions, MySQLQuery
+from pypika import MySQLQuery, Table, functions
 from pypika.queries import QueryBuilder
 
 from src.notify.adapters.models.user import UserFilter
@@ -26,27 +27,53 @@ class UserQueryStorage:
         return _filter_query
 
     def get_subquery_sn_onu(self) -> QueryBuilder:
+        subquery = (
+            MySQLQuery.from_(self.dv)
+            .select(
+                self.dv.parent_id,
+                functions.Max(self.dv.time).as_("max_time"),
+            )
+            .where((self.dv.dopfield_id == 33))
+            .groupby(self.dv.parent_id)
+        )
         return (
             MySQLQuery.from_(self.dv)
             .select(
                 self.dv.parent_id,
                 self.dv.field_value.as_("sn_onu"),
-                functions.Max(self.dv.revision).as_("max_revision"),
+                self.dv.time.as_("max_time"),
+            )
+            .inner_join(subquery)
+            .on(
+                (self.dv.time == subquery.max_time)
+                & (self.dv.parent_id == subquery.parent_id)
             )
             .where((self.dv.dopfield_id == 33))
-            .groupby(self.dv.parent_id, self.dv.field_value)
         )
 
     def get_subquery_phone_number(self) -> QueryBuilder:
+        subquery = (
+            MySQLQuery.from_(self.dv)
+            .select(
+                self.dv.parent_id,
+                functions.Max(self.dv.time).as_("max_time"),
+            )
+            .where((self.dv.dopfield_id == 8))
+            .groupby(self.dv.parent_id)
+        )
         return (
             MySQLQuery.from_(self.dv)
             .select(
                 self.dv.parent_id,
                 self.dv.field_value.as_("phone_number"),
-                functions.Max(self.dv.revision).as_("max_revision"),
+                self.dv.time.as_("max_time"),
+            )
+            .inner_join(subquery)
+            .on(
+                (self.dv.time == subquery.max_time)
+                & (self.dv.parent_id == subquery.parent_id)
             )
             .where((self.dv.dopfield_id == 8))
-            .groupby(self.dv.parent_id, self.dv.field_value)
         )
 
     def get_users_count(self, _filter: UserFilter):
@@ -57,8 +84,6 @@ class UserQueryStorage:
             .select(functions.Count("*").as_("count"))
             .inner_join(self.us)
             .on(self.us_trf.uid == self.us.id)
-            .inner_join(self.dv)
-            .on(self.us_trf.uid == self.dv.parent_id)
             .inner_join(self.pl)
             .on(self.us_trf.packet == self.pl.id)
             .inner_join(self.grp)
@@ -67,6 +92,7 @@ class UserQueryStorage:
             .on(self.us.id == subquery_sn_onu.parent_id)
             .inner_join(subquery_phone_number)
             .on(self.us.id == subquery_phone_number.parent_id)
+            .distinct()
             # .where(self._filter_and(_filter=_filter))
         )
         return query
@@ -78,21 +104,21 @@ class UserQueryStorage:
             MySQLQuery.from_(self.us_trf)
             .select(
                 self.us.id.as_("id"),
-                self.us_trf.submoney.as_("abonent_pay"),
+                self.us.ip,
                 self.us.fio,
+                self.us_trf.submoney.as_("fee"),
                 self.us.comment,
-                self.us_trf.now_on,
                 self.us_trf.startmoney.as_("balance"),
                 self.pl.name.as_("packet_name"),
-                self.dv.field_value.as_("phone_number"),
-                self.us.ip,
+                subquery_phone_number.phone_number.as_("phone_number"),
+                subquery_phone_number.max_time.as_("phone_number_time"),
+                subquery_sn_onu.sn_onu.as_("sn_onu"),
+                subquery_sn_onu.max_time.as_("sn_onu_time"),
                 self.grp.grp_name,
                 self.us.grp.as_("grp_id"),
             )
             .inner_join(self.us)
             .on(self.us_trf.uid == self.us.id)
-            .inner_join(self.dv)
-            .on(self.us_trf.uid == self.dv.parent_id)
             .inner_join(self.pl)
             .on(self.us_trf.packet == self.pl.id)
             .inner_join(self.grp)
@@ -104,6 +130,9 @@ class UserQueryStorage:
             # .where(self._filter_and(_filter=_filter))
             .limit(limit)
             .offset(offset)
+            .distinct()
+            # .orderby(subquery_phone_number.max_time.as_("phone_number_time"), order=Order.desc)
+            # .orderby(subquery_phone_number.max_time.as_("sn_onu_time"), order=Order.desc)
             # .order_by(self.get_ordering(ordering=ordering))
         )
         return query

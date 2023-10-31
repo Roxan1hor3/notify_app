@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     API_HOST: str = "127.0.0.1"
     API_PORT: int = 8000
     API_RELOAD: bool = True
-    PROJECT_PATH: str = dirname(dirname(dirname(dirname(abspath(__file__)))))
+    PROJECT_PATH: str = dirname(dirname(dirname(abspath(__file__))))
     STATIC_DIR: str = join(PROJECT_PATH, "static")
 
     DB_HOST: str

@@ -1,3 +1,4 @@
+import os
 from asyncio import get_running_loop
 
 from fastapi import FastAPI
@@ -13,6 +14,7 @@ settings = get_settings()
 
 def create_app() -> FastAPI:
     """Application factory."""
+    os.makedirs(settings.STATIC_DIR, exist_ok=True)
 
     docs_args = {}
     if settings.USE_DOCS:

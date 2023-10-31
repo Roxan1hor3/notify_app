@@ -1,5 +1,6 @@
 import csv
 import logging
+from datetime import datetime
 from os import path
 from typing import Self
 
@@ -22,18 +23,20 @@ class UserService(BaseService):
         "Група",
         "IP",
         "Абонент",
-        "Абоненська плата активна",
+        # "Абоненська плата активна",
         "Абоненська плата",
         "Баланс",
         "Пакет",
         "Номер телефона",
         "Коментарій",
         "Чи здав обладнання",
+        "Час обновлення телефона",
+        "Час обновлення обладнення",
     )
 
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
-        self.user_notify_file = path.join(self.static_dir_path, "update_cl_report.csv")
+        self.user_notify_file = path.join(self.static_dir_path, "user_notify.csv")
 
     @classmethod
     async def create_service(
@@ -52,11 +55,10 @@ class UserService(BaseService):
         limit = 1000
         count = await self.users_repo.get_users_count(_filter=_filter)
         with open(self.user_notify_file, mode="w") as csvfile:
-            writer = csv.DictWriter(
-                csvfile, fieldnames=self.OFFER_FB_UPDATE_FILE_FIELDS
-            )
+            writer = csv.DictWriter(csvfile, fieldnames=self.USER_NOTIFY_FILE_FIELDS)
+            writer.writeheader()
             for offset in range(0, count, limit):
-                users = await self.users_repo.get_list(
+                count, users = await self.users_repo.get_list(
                     _filter=_filter,
                     limit=limit,
                     offset=offset,
@@ -65,17 +67,23 @@ class UserService(BaseService):
                 [
                     writer.writerow(
                         {
-                            "Абонент ID": None,
-                            "Група": None,
-                            "IP": None,
-                            "Абонент": None,
-                            "Абоненська плата активна": None,
-                            "Абоненська плата": None,
-                            "Баланс": None,
-                            "Пакет": None,
-                            "Номер телефона": None,
-                            "Коментарій": None,
-                            "Чи здав обладнання": None,
+                            "Абонент ID": user.id,
+                            "Група": user.grp_id,
+                            "IP": user.ip,
+                            "Абонент": user.fio,
+                            # "Абоненська плата активна": user.,
+                            "Абоненська плата": user.fee,
+                            "Баланс": user.balance,
+                            "Пакет": user.packet_name,
+                            "Номер телефона": user.phone_number,
+                            "Коментарій": user.comment,
+                            "Чи здав обладнання": user.sn_onu,
+                            "Час обновлення телефона": datetime.fromtimestamp(
+                                user.phone_number_time
+                            ),
+                            "Час обновлення обладнення": datetime.fromtimestamp(
+                                user.sn_onu_time
+                            ),
                         }
                     )
                     for user in users
