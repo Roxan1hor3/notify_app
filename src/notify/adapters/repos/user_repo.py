@@ -9,7 +9,7 @@ class UsersRepo(BaseMySqlRepo):
     query_storage = UserQueryStorage()
 
     async def get_list(
-        self, _filter: UserFilter, limit: int, offset: int, ordering: str
+        self, _filter: UserFilter, limit: int, offset: int
     ) -> tuple[int, list[User]]:
         async with self.get_cursor() as cur:
             await cur.execute(
@@ -18,7 +18,7 @@ class UsersRepo(BaseMySqlRepo):
             count = await cur.fetchall()
             await cur.execute(
                 self.query_storage.get_users(
-                    _filter=_filter, limit=limit, offset=offset, ordering=ordering
+                    _filter=_filter, limit=limit, offset=offset
                 ).get_sql()
             )
             results = await cur.fetchall()

@@ -1,6 +1,7 @@
 from pprint import pprint
+from typing import List, Any
 
-from pypika import MySQLQuery, Table, functions
+from pypika import MySQLQuery, Table, functions, Criterion
 from pypika.queries import QueryBuilder
 
 from src.notify.adapters.models.user import UserFilter
@@ -13,20 +14,24 @@ class UserQueryStorage:
     pl = Table("plans2")
     grp = Table("user_grp")
 
-    def _filter_and(self, _filter: UserFilter) -> bool:
-        if _filter.user_active:
-            _filter_query = self.pl.name == "[1000]0."
-        if _filter.group_ids:
-            _filter_query = _filter_query & self.grp.grp_id.isin(_filter.group_ids)
-        if _filter.balance_gte:
-            _filter_query = _filter_query & (self.us.balance >= _filter.balance_gte)
-        if _filter.balance_lte:
-            _filter_query = _filter_query & (self.us.balance <= _filter.balance_lte)
-        if _filter.fee_more_than_balance:
-            _filter_query = _filter_query & (self.us_trf.submoney >= self.us.balance)
-        return _filter_query
+    def _filter(self, _filter: UserFilter) -> list[bool | Any]:
+        print(_filter)
+        _filters = []
+        if _filter.user_active is False:
+            _filters.append((self.pl.name == "[1000]0."))
+        elif _filter.user_active is True:
+            _filters.append((self.pl.name != "[1000]0."))
+        if _filter.group_ids is not None:
+            _filters.append((self.grp.grp_id.isin(_filter.group_ids)))
+        if _filter.balance_gte is not None:
+            _filters.append((self.us.balance >= _filter.balance_gte))
+        if _filter.balance_lte is not None:
+            _filters.append((self.us.balance <= _filter.balance_lte))
+        if _filter.fee_more_than_balance is not None:
+            _filters.append((self.us_trf.submoney >= self.us.balance))
+        return _filters
 
-    def get_subquery_sn_onu(self) -> QueryBuilder:
+    def get_subquery_sn_onu(self, _filter: UserFilter) -> QueryBuilder:
         subquery = (
             MySQLQuery.from_(self.dv)
             .select(
@@ -36,7 +41,7 @@ class UserQueryStorage:
             .where((self.dv.dopfield_id == 33))
             .groupby(self.dv.parent_id)
         )
-        return (
+        query = (
             MySQLQuery.from_(self.dv)
             .select(
                 self.dv.parent_id,
@@ -50,6 +55,11 @@ class UserQueryStorage:
             )
             .where((self.dv.dopfield_id == 33))
         )
+        if _filter.sn_onu_equipment_delivered is True:
+            query = query.where((self.dv.field_value == ''))
+        elif _filter.sn_onu_equipment_delivered is False:
+            query = query.where((self.dv.field_value != ''))
+        return query
 
     def get_subquery_phone_number(self) -> QueryBuilder:
         subquery = (
@@ -77,7 +87,8 @@ class UserQueryStorage:
         )
 
     def get_users_count(self, _filter: UserFilter):
-        subquery_sn_onu = self.get_subquery_sn_onu()
+        subquery_sn_onu = self.get_subquery_sn_onu(_filter=_filter)
+        subquery_mac = self.get_subquery_mac(_filter=_filter)
         subquery_phone_number = self.get_subquery_phone_number()
         query = (
             MySQLQuery.from_(self.us_trf)
@@ -92,19 +103,25 @@ class UserQueryStorage:
             .on(self.us.id == subquery_sn_onu.parent_id)
             .inner_join(subquery_phone_number)
             .on(self.us.id == subquery_phone_number.parent_id)
+            .inner_join(subquery_mac)
+            .on(self.us.id == subquery_mac.parent_id)
+            .where(Criterion.all(
+                self._filter(_filter=_filter)
+            ))
             .distinct()
-            # .where(self._filter_and(_filter=_filter))
         )
         return query
 
-    def get_users(self, _filter: UserFilter, limit: int, offset: int, ordering: str):
-        subquery_sn_onu = self.get_subquery_sn_onu()
+    def get_users(self, _filter: UserFilter, limit: int, offset: int):
+        subquery_sn_onu = self.get_subquery_sn_onu(_filter=_filter)
+        subquery_mac = self.get_subquery_mac(_filter=_filter)
         subquery_phone_number = self.get_subquery_phone_number()
         query = (
             MySQLQuery.from_(self.us_trf)
             .select(
                 self.us.id.as_("id"),
                 self.us.ip,
+                self.us.passwd,
                 self.us.fio,
                 self.us_trf.submoney.as_("fee"),
                 self.us.comment,
@@ -114,6 +131,8 @@ class UserQueryStorage:
                 subquery_phone_number.max_time.as_("phone_number_time"),
                 subquery_sn_onu.sn_onu.as_("sn_onu"),
                 subquery_sn_onu.max_time.as_("sn_onu_time"),
+                subquery_mac.mac.as_("mac"),
+                subquery_mac.max_time.as_("mac_time"),
                 self.grp.grp_name,
                 self.us.grp.as_("grp_id"),
             )
@@ -127,19 +146,43 @@ class UserQueryStorage:
             .on(self.us.id == subquery_sn_onu.parent_id)
             .inner_join(subquery_phone_number)
             .on(self.us.id == subquery_phone_number.parent_id)
-            # .where(self._filter_and(_filter=_filter))
+            .inner_join(subquery_mac)
+            .on(self.us.id == subquery_mac.parent_id)
+            .where(Criterion.all(
+                self._filter(_filter=_filter)
+            ))
             .limit(limit)
             .offset(offset)
             .distinct()
-            # .orderby(subquery_phone_number.max_time.as_("phone_number_time"), order=Order.desc)
-            # .orderby(subquery_phone_number.max_time.as_("sn_onu_time"), order=Order.desc)
-            # .order_by(self.get_ordering(ordering=ordering))
         )
         return query
 
-    def get_ordering(self, ordering: str):
-        if ordering == "id":
-            return self.us.id
-        elif ordering == "-id":
-            return self.us.id.desc()
-        return self.us.id
+    def get_subquery_mac(self, _filter: UserFilter) -> QueryBuilder:
+        subquery = (
+            MySQLQuery.from_(self.dv)
+            .select(
+                self.dv.parent_id,
+                functions.Max(self.dv.time).as_("max_time"),
+            )
+            .where((self.dv.dopfield_id == 13))
+            .groupby(self.dv.parent_id)
+        )
+        query = (
+            MySQLQuery.from_(self.dv)
+            .select(
+                self.dv.parent_id,
+                self.dv.field_value.as_("mac"),
+                self.dv.time.as_("max_time"),
+            )
+            .inner_join(subquery)
+            .on(
+                (self.dv.time == subquery.max_time)
+                & (self.dv.parent_id == subquery.parent_id)
+            )
+            .where((self.dv.dopfield_id == 13))
+        )
+        if _filter.mac_equipment_delivered is True:
+            query = query.where((self.dv.field_value == ''))
+        elif _filter.mac_equipment_delivered is False:
+            query = query.where((self.dv.field_value != ''))
+        return query

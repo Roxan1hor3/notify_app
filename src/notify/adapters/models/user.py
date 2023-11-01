@@ -15,6 +15,8 @@ class User(BaseModel):
     sn_onu: str
     phone_number_time: int
     sn_onu_time: int
+    mac_time: int
+    mac: str
 
 
 class UserFilter(BaseModel):
@@ -23,4 +25,5 @@ class UserFilter(BaseModel):
     balance_lte: float | None = None
     user_active: bool | None = None
     fee_more_than_balance: bool | None = None
-    equipment_delivered: bool | None = None
+    mac_equipment_delivered: bool | None = None
+    sn_onu_equipment_delivered: bool | None = None

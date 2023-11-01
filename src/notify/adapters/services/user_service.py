@@ -1,5 +1,6 @@
 import csv
 import logging
+import uuid
 from datetime import datetime
 from os import path
 from typing import Self
@@ -23,20 +24,21 @@ class UserService(BaseService):
         "Група",
         "IP",
         "Абонент",
-        # "Абоненська плата активна",
         "Абоненська плата",
         "Баланс",
         "Пакет",
-        "Номер телефона",
         "Коментарій",
-        "Чи здав обладнання",
+        "Номер телефона",
         "Час обновлення телефона",
-        "Час обновлення обладнення",
+        "Сирійний номер ONU",
+        "Час обновлення сирійного номера ONU",
+        "MAC адрес",
+        "Час обновлення MAC адреса",
     )
 
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
-        self.user_notify_file = path.join(self.static_dir_path, "user_notify.csv")
+        self.user_notify_file = path.join(self.static_dir_path, "user_notify")
 
     @classmethod
     async def create_service(
@@ -50,11 +52,12 @@ class UserService(BaseService):
 
         return self
 
-    async def get_user_notify_file(self, params: QueryUserNotifySchema) -> str:
-        _filter = UserFilter(**params.model_dump())
+    async def get_user_notify_file(self, params: QueryUserNotifySchema, group_ids: list[int] = None) -> str:
+        _filter = UserFilter(**params.model_dump(), group_ids=group_ids)
         limit = 1000
         count = await self.users_repo.get_users_count(_filter=_filter)
-        with open(self.user_notify_file, mode="w") as csvfile:
+        new_user_notify_file_name = f"{self.user_notify_file}_{str(uuid.uuid4())}.csv"
+        with open(new_user_notify_file_name, mode="w") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=self.USER_NOTIFY_FILE_FIELDS)
             writer.writeheader()
             for offset in range(0, count, limit):
@@ -62,7 +65,6 @@ class UserService(BaseService):
                     _filter=_filter,
                     limit=limit,
                     offset=offset,
-                    ordering=params.ordering,
                 )
                 [
                     writer.writerow(
@@ -71,21 +73,24 @@ class UserService(BaseService):
                             "Група": user.grp_id,
                             "IP": user.ip,
                             "Абонент": user.fio,
-                            # "Абоненська плата активна": user.,
                             "Абоненська плата": user.fee,
                             "Баланс": user.balance,
                             "Пакет": user.packet_name,
-                            "Номер телефона": user.phone_number,
                             "Коментарій": user.comment,
-                            "Чи здав обладнання": user.sn_onu,
+                            "Номер телефона": user.phone_number,
                             "Час обновлення телефона": datetime.fromtimestamp(
                                 user.phone_number_time
                             ),
-                            "Час обновлення обладнення": datetime.fromtimestamp(
+                            "Сирійний номер ONU": user.sn_onu,
+                            "Час обновлення сирійного номера ONU": datetime.fromtimestamp(
                                 user.sn_onu_time
+                            ),
+                            "MAC адрес": user.mac,
+                            "Час обновлення MAC адреса": datetime.fromtimestamp(
+                                user.mac_time
                             ),
                         }
                     )
                     for user in users
                 ]
-        return self.user_notify_file
+        return new_user_notify_file_name
