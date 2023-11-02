@@ -2,6 +2,7 @@ from fastapi import Query
 
 from src.notify.api.v1.schemas.base import BaseQuery
 
+
 def validate_groups(
     group_ids: str | None = Query(None),
 ) -> list[str] | None:
@@ -11,6 +12,7 @@ def validate_groups(
     group_ids = group_ids.split(",")
 
     return group_ids
+
 
 class QueryUserNotifySchema(BaseQuery):
     balance_gte: float | None = None

@@ -1,21 +1,19 @@
-from pprint import pprint
-from typing import List, Any
+from typing import Any
 
-from pypika import MySQLQuery, Table, functions, Criterion
+from pypika import Criterion, MySQLQuery, Table, functions
 from pypika.queries import QueryBuilder
 
-from src.notify.adapters.models.user import UserFilter
+from src.notify.adapters.models.user_billing import UserBillingFilter
 
 
-class UserQueryStorage:
+class UserBillingQueryStorage:
     us_trf = Table("users_trf")
     us = Table("users")
     dv = Table("dopvalues")
     pl = Table("plans2")
     grp = Table("user_grp")
 
-    def _filter(self, _filter: UserFilter) -> list[bool | Any]:
-        print(_filter)
+    def _filter(self, _filter: UserBillingFilter) -> list[bool | Any]:
         _filters = []
         if _filter.user_active is False:
             _filters.append((self.pl.name == "[1000]0."))
@@ -31,7 +29,7 @@ class UserQueryStorage:
             _filters.append((self.us_trf.submoney >= self.us.balance))
         return _filters
 
-    def get_subquery_sn_onu(self, _filter: UserFilter) -> QueryBuilder:
+    def get_subquery_sn_onu(self, _filter: UserBillingFilter) -> QueryBuilder:
         subquery = (
             MySQLQuery.from_(self.dv)
             .select(
@@ -56,9 +54,9 @@ class UserQueryStorage:
             .where((self.dv.dopfield_id == 33))
         )
         if _filter.sn_onu_equipment_delivered is True:
-            query = query.where((self.dv.field_value == ''))
+            query = query.where((self.dv.field_value == ""))
         elif _filter.sn_onu_equipment_delivered is False:
-            query = query.where((self.dv.field_value != ''))
+            query = query.where((self.dv.field_value != ""))
         return query
 
     def get_subquery_phone_number(self) -> QueryBuilder:
@@ -86,7 +84,7 @@ class UserQueryStorage:
             .where((self.dv.dopfield_id == 8))
         )
 
-    def get_users_count(self, _filter: UserFilter):
+    def get_users_count(self, _filter: UserBillingFilter):
         subquery_sn_onu = self.get_subquery_sn_onu(_filter=_filter)
         subquery_mac = self.get_subquery_mac(_filter=_filter)
         subquery_phone_number = self.get_subquery_phone_number()
@@ -105,14 +103,12 @@ class UserQueryStorage:
             .on(self.us.id == subquery_phone_number.parent_id)
             .inner_join(subquery_mac)
             .on(self.us.id == subquery_mac.parent_id)
-            .where(Criterion.all(
-                self._filter(_filter=_filter)
-            ))
+            .where(Criterion.all(self._filter(_filter=_filter)))
             .distinct()
         )
         return query
 
-    def get_users(self, _filter: UserFilter, limit: int, offset: int):
+    def get_users(self, _filter: UserBillingFilter, limit: int, offset: int):
         subquery_sn_onu = self.get_subquery_sn_onu(_filter=_filter)
         subquery_mac = self.get_subquery_mac(_filter=_filter)
         subquery_phone_number = self.get_subquery_phone_number()
@@ -148,16 +144,14 @@ class UserQueryStorage:
             .on(self.us.id == subquery_phone_number.parent_id)
             .inner_join(subquery_mac)
             .on(self.us.id == subquery_mac.parent_id)
-            .where(Criterion.all(
-                self._filter(_filter=_filter)
-            ))
+            .where(Criterion.all(self._filter(_filter=_filter)))
             .limit(limit)
             .offset(offset)
             .distinct()
         )
         return query
 
-    def get_subquery_mac(self, _filter: UserFilter) -> QueryBuilder:
+    def get_subquery_mac(self, _filter: UserBillingFilter) -> QueryBuilder:
         subquery = (
             MySQLQuery.from_(self.dv)
             .select(
@@ -182,7 +176,7 @@ class UserQueryStorage:
             .where((self.dv.dopfield_id == 13))
         )
         if _filter.mac_equipment_delivered is True:
-            query = query.where((self.dv.field_value == ''))
+            query = query.where((self.dv.field_value == ""))
         elif _filter.mac_equipment_delivered is False:
-            query = query.where((self.dv.field_value != ''))
+            query = query.where((self.dv.field_value != ""))
         return query

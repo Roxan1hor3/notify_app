@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -25,3 +26,13 @@ class RetrieveManyArgs(BaseArgs):
         raise TypeError(
             "Wrong type for 'match_params', must be subclass of BaseMatchParams"
         )
+
+
+class BaseEntityModel(ABC, BaseModel):
+    """The base model for all DB entities"""
+
+    __pk__ = ["uuid"]
+
+    @staticmethod
+    def get_entity_name():
+        raise NotImplementedError

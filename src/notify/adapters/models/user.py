@@ -1,29 +1,40 @@
-from pydantic import BaseModel
+import hashlib
+from datetime import datetime
+from typing import Annotated
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field, field_validator
+
+from src.notify.adapters.models.base import BaseEntityModel
 
 
-class User(BaseModel):
-    id: int
-    ip: str
-    fio: str
-    fee: float
-    comment: str
-    balance: float
-    packet_name: str
-    phone_number: str
-    grp_name: str
-    grp_id: int
-    sn_onu: str
-    phone_number_time: int
-    sn_onu_time: int
-    mac_time: int
-    mac: str
+def _default_uuid():
+    return uuid4()
+
+
+class User(BaseEntityModel):
+    uuid: Annotated[UUID, Field(default_factory=_default_uuid)]
+    username: str
+    password: str
+    session_uuid: UUID | None = None
+    last_login_date: datetime | None = None
+    expire_time: datetime | None = None
+
+    @staticmethod
+    def get_entity_name():
+        return "admin_users"
+
+
+class TempUser(BaseModel):
+    username: str
+    password: str
+
+    @field_validator("password", mode="after")
+    def hash_password(cls, value: str) -> str:
+        return hashlib.md5(value.encode()).hexdigest()
 
 
 class UserFilter(BaseModel):
-    group_ids: list[int] | None = None
-    balance_gte: float | None = None
-    balance_lte: float | None = None
-    user_active: bool | None = None
-    fee_more_than_balance: bool | None = None
-    mac_equipment_delivered: bool | None = None
-    sn_onu_equipment_delivered: bool | None = None
+    session_uuid: UUID | None = None
+    username: str | None = None
+    expire_time_lt: datetime | None = None

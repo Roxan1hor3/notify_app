@@ -1,21 +1,27 @@
 import csv
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from os import path
 from typing import Self
+from uuid import UUID
 
 from aiomysql import Connection
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from pydantic import ValidationError
 
-from src.notify.adapters.models.user import UserFilter
+from src.notify.adapters.models.user import TempUser, User
+from src.notify.adapters.models.user_billing import UserBillingFilter
+from src.notify.adapters.repos.user_biilling_repo import UsersBillingRepo
 from src.notify.adapters.repos.user_repo import UsersRepo
-from src.notify.adapters.services.base import BaseService
+from src.notify.adapters.services.base import BaseService, ServiceError
 from src.notify.api.v1.schemas.users_schemas import QueryUserNotifySchema
 
 logger = logging.getLogger(__name__)
 
 
 class UserService(BaseService):
+    users_billing_repo: UsersBillingRepo
     users_repo: UsersRepo
     static_dir_path: str
     user_notify_file: str
@@ -39,29 +45,36 @@ class UserService(BaseService):
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
         self.user_notify_file = path.join(self.static_dir_path, "user_notify")
+        self.new_users_file = path.join(self.static_dir_path, "new_users.csv")
 
     @classmethod
     async def create_service(
         cls,
         mysql_db_connection: Connection,
+        mongo_db_connection: AsyncIOMotorDatabase,
         static_dir_path,
     ) -> Self:
         self = cls(static_dir_path=static_dir_path)
 
-        self.users_repo = await UsersRepo.create_repo(mysql_db_connection)
+        self.users_billing_repo = await UsersBillingRepo.create_repo(
+            mysql_db_connection
+        )
+        self.users_repo = await UsersRepo.create_repo(mongo_db_connection)
 
         return self
 
-    async def get_user_notify_file(self, params: QueryUserNotifySchema, group_ids: list[int] = None) -> str:
-        _filter = UserFilter(**params.model_dump(), group_ids=group_ids)
+    async def get_user_notify_file(
+        self, params: QueryUserNotifySchema, group_ids: list[int] = None
+    ) -> str:
+        _filter = UserBillingFilter(**params.model_dump(), group_ids=group_ids)
         limit = 1000
-        count = await self.users_repo.get_users_count(_filter=_filter)
+        count = await self.users_billing_repo.get_users_count(_filter=_filter)
         new_user_notify_file_name = f"{self.user_notify_file}_{str(uuid.uuid4())}.csv"
         with open(new_user_notify_file_name, mode="w") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=self.USER_NOTIFY_FILE_FIELDS)
             writer.writeheader()
             for offset in range(0, count, limit):
-                count, users = await self.users_repo.get_list(
+                users = await self.users_billing_repo.get_list(
                     _filter=_filter,
                     limit=limit,
                     offset=offset,
@@ -94,3 +107,68 @@ class UserService(BaseService):
                     for user in users
                 ]
         return new_user_notify_file_name
+
+    async def retrieve(self, username: str) -> User:
+        return await self.users_repo.retrieve(username=username)
+
+    async def retrieve_bu_session_uuid(self, session_uuid: UUID) -> User:
+        return await self.users_repo.retrieve_bu_session_uuid(session_uuid=session_uuid)
+
+    async def login(self, user_uuid: UUID, session_uuid: UUID) -> UUID:
+        await self.users_repo.login(
+            user_uuid=user_uuid,
+            session_uuid=session_uuid,
+            expire_time=datetime.now() + timedelta(days=1),
+            last_login_date=datetime.now(),
+        )
+        return session_uuid
+
+    async def upload_new_users(self) -> None:
+        """Imports data from the CSV file."""
+        if not path.exists(self.new_users_file):
+            raise ServiceError(message="new users file does not exist")
+        with open(self.new_users_file, "r") as csv_file:
+            validation_errors = []
+            csv_reader = csv.DictReader(csv_file)
+
+            for row in csv_reader:
+                try:
+                    csv_data = TempUser(**row)
+                except ValidationError as e:
+                    validation_errors.append(e)
+                    continue
+
+                try:
+                    await self._import(csv_data)
+                except ValidationError as e:
+                    validation_errors.append(e)
+                    continue
+        if validation_errors:
+            logger.error(
+                "Some validation errors in csv file %s - %s",
+                self.new_users_file,
+                validation_errors,
+            )
+        logger.error("Successful upload 'new_users_file.csv'")
+
+    async def _import(self, temp_user: TempUser) -> None:
+        username_exists = await self.users_repo.check_field_value_exists(
+            field="username", value=temp_user.username
+        )
+        password_exists = await self.users_repo.check_field_value_exists(
+            field="password", value=temp_user.password
+        )
+        if username_exists is False and password_exists is False:
+            await self._import_create(temp_user)
+        elif username_exists is False and password_exists is True:
+            raise ServiceError(f"not unique password user: {temp_user.model_dump()}")
+        else:
+            await self._import_update(temp_user)
+
+    async def _import_update(self, temp_user: TempUser) -> None:
+        await self.users_repo.update_password(
+            username=temp_user.username, password=temp_user.password
+        )
+
+    async def _import_create(self, temp_user: TempUser) -> None:
+        await self.users_repo.save_user(user=User(**temp_user.model_dump()))

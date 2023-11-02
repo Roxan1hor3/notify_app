@@ -7,7 +7,7 @@ from starlette.middleware.cors import CORSMiddleware
 from src.notify.api.dependencies import services
 from src.notify.api.v1.router import v1_router
 from src.notify.config import get_settings
-from src.notify.extensions.db import get_my_sql_db_connection
+from src.notify.extensions.db import create_mongo_connection, get_my_sql_db_connection
 
 settings = get_settings()
 
@@ -55,11 +55,12 @@ def register_events(app: FastAPI):
         await services.init_service_manager(
             settings=settings,
             my_sql_connection=await get_my_sql_db_connection(
-                user=settings.DB_USER,
-                host=settings.DB_HOST,
-                port=settings.DB_PORT,
-                db=settings.DB_NAME,
-                password=settings.DB_PASSWORD,
+                user=settings.MY_SQL_DB_USER,
+                host=settings.MY_SQL_DB_HOST,
+                port=settings.MY_SQL_DB_PORT,
+                db=settings.MY_SQL_DB_NAME,
+                password=settings.MY_SQL_DB_PASSWORD,
                 loop=get_running_loop(),
             ),
+            mongo_db_connection=create_mongo_connection(db_url=settings.MONGO_DB_URL),
         )

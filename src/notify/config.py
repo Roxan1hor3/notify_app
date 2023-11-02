@@ -14,11 +14,14 @@ class Settings(BaseSettings):
     PROJECT_PATH: str = dirname(dirname(dirname(abspath(__file__))))
     STATIC_DIR: str = join(PROJECT_PATH, "static")
 
-    DB_HOST: str
-    DB_USER: str
-    DB_PORT: int
-    DB_PASSWORD: str
-    DB_NAME: str
+    MY_SQL_DB_HOST: str
+    MY_SQL_DB_USER: str
+    MY_SQL_DB_PORT: int
+    MY_SQL_DB_PASSWORD: str
+    MY_SQL_DB_NAME: str
+
+    MONGO_DB_URL: str
+
     USE_DOCS: bool = False
 
     CORS_ALLOW_ORIGINS: Sequence[str] = ()
