@@ -1,6 +1,9 @@
-from typing import List
-
-from src.notify.adapters.models.user_billing import UserBilling, UserBillingFilter
+from src.notify.adapters.models.user_billing import (
+    BillingGroup,
+    BillingPacket,
+    UserBilling,
+    UserBillingFilter,
+)
 from src.notify.adapters.queries.users_billing_query import UserBillingQueryStorage
 from src.notify.adapters.repos.base import BaseAioMySqlRepo
 
@@ -28,3 +31,15 @@ class UsersBillingRepo(BaseAioMySqlRepo):
             )
             result = await cur.fetchall()
             return result[0]["count"]
+
+    async def get_groups_filters(self):
+        async with self.get_cursor() as cur:
+            await cur.execute(self.query_storage.get_groups().get_sql())
+            results = await cur.fetchall()
+            return [BillingGroup(**res) for res in results]
+
+    async def get_packets_filters(self):
+        async with self.get_cursor() as cur:
+            await cur.execute(self.query_storage.get_packets().get_sql())
+            results = await cur.fetchall()
+            return [BillingPacket(**res) for res in results]

@@ -1,5 +1,7 @@
 from fastapi import Query
+from pydantic import BaseModel
 
+from src.notify.adapters.models.user_billing import BillingGroup, BillingPacket
 from src.notify.api.v1.schemas.base import BaseQuery
 
 
@@ -21,3 +23,8 @@ class QueryUserNotifySchema(BaseQuery):
     fee_more_than_balance: bool | None = None
     mac_equipment_delivered: bool | None = None
     sn_onu_equipment_delivered: bool | None = None
+
+
+class BillingFiltersResponseSchema(BaseModel):
+    groups: list[BillingGroup]
+    packets: list[BillingPacket]

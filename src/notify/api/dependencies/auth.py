@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBasicCredentials, HTTPBasic
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette import status
 from starlette.requests import Request
 
@@ -55,6 +55,8 @@ async def get_authenticated_user_from_session_id(
         )
     except RepoObjectNotFound:
         raise invalid_credentials
-    if user.expire_time < datetime.datetime.now():
+    if user.expire_time is None or user.expire_time < datetime.datetime.now():
         raise session_uuid_expired
+    request.state.user_uuid = user.uuid
+    request.state.username = user.username
     return request

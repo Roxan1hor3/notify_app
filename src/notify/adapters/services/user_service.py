@@ -44,7 +44,7 @@ class UserService(BaseService):
 
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
-        self.user_notify_file = path.join(self.static_dir_path, "user_notify")
+        self.user_notify_file = path.join(self.static_dir_path, "user_notify.csv")
         self.new_users_file = path.join(self.static_dir_path, "new_users.csv")
 
     @classmethod
@@ -69,8 +69,7 @@ class UserService(BaseService):
         _filter = UserBillingFilter(**params.model_dump(), group_ids=group_ids)
         limit = 1000
         count = await self.users_billing_repo.get_users_count(_filter=_filter)
-        new_user_notify_file_name = f"{self.user_notify_file}_{str(uuid.uuid4())}.csv"
-        with open(new_user_notify_file_name, mode="w") as csvfile:
+        with open(self.user_notify_file, mode="w") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=self.USER_NOTIFY_FILE_FIELDS)
             writer.writeheader()
             for offset in range(0, count, limit):
@@ -106,7 +105,7 @@ class UserService(BaseService):
                     )
                     for user in users
                 ]
-        return new_user_notify_file_name
+        return self.user_notify_file
 
     async def retrieve(self, username: str) -> User:
         return await self.users_repo.retrieve(username=username)
@@ -172,3 +171,13 @@ class UserService(BaseService):
 
     async def _import_create(self, temp_user: TempUser) -> None:
         await self.users_repo.save_user(user=User(**temp_user.model_dump()))
+
+    async def get_filters(self):
+        groups = await self.users_billing_repo.get_groups_filters()
+        packets = await self.users_billing_repo.get_packets_filters()
+        return {"groups": groups, "packets": packets}
+
+    async def logout(self, user_uuid) -> None:
+        await self.users_repo.logout(
+            user_uuid=user_uuid,
+        )

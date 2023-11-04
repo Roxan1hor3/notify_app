@@ -1,14 +1,20 @@
+import logging
 from abc import ABC
 from contextlib import asynccontextmanager
 from typing import Self, Type
 
 import aiomysql
 from aiomysql import Connection
+from motor.core import AgnosticClientSession
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from pydantic import BaseModel
+from pymongo import DeleteMany, InsertOne, ReplaceOne, UpdateMany, UpdateOne
+from pymongo.errors import BulkWriteError
 
 from src.notify.adapters.models.base import BaseEntityModel
 from src.notify.adapters.queries.base import BaseQueriesStorage
+
+logger = logging.getLogger(__name__)
 
 
 class BaseRepository(ABC):
@@ -66,3 +72,25 @@ class BaseMotorRepo(BaseRepository):
             collection_name = self.MODEL.get_entity_name()
             self._collection = self.database[collection_name]
         return self._collection
+
+    @asynccontextmanager
+    async def start_transaction(self):
+        async with await self.database.client.start_session() as s:
+            async with s.start_transaction():
+                yield s
+
+    async def bulk_write(
+        self,
+        update_list: list[InsertOne | DeleteMany | ReplaceOne | UpdateOne | UpdateMany],
+        session: AgnosticClientSession = None,
+        raise_error: bool = False,
+    ) -> None:
+        if update_list:
+            try:
+                await self.collection.bulk_write(update_list, session=session)
+            except BulkWriteError as bwe:
+                logger.critical("Failed offer update")
+                messages = [err["errmsg"] for err in bwe.details["writeErrors"]]
+                logger.critical("; ".join(messages))
+                if raise_error is True:
+                    raise bwe

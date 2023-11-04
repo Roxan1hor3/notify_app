@@ -1,4 +1,10 @@
-from pydantic import BaseModel
+from typing import Annotated
+
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
+from pydantic import BaseModel, model_validator, Field
+
+from src.notify.adapters.models.message import MessageStatus
 
 
 class UserBilling(BaseModel):
@@ -27,3 +33,30 @@ class UserBillingFilter(BaseModel):
     fee_more_than_balance: bool | None = None
     mac_equipment_delivered: bool | None = None
     sn_onu_equipment_delivered: bool | None = None
+
+
+class BillingGroup(BaseModel):
+    grp_name: str
+    grp_id: int
+
+
+class BillingPacket(BaseModel):
+    name: str
+    id: int
+
+
+class UserBillingMessageData(BaseModel):
+    id: Annotated[int, Field(alias="Абонент ID")]
+    phone_number: Annotated[str, Field(alias="Номер телефона")]
+    status: MessageStatus | None = None
+
+    @model_validator(mode="after")
+    def pre_save(self):
+        try:
+            phone = phonenumbers.parse(self.phone_number)
+            if not phonenumbers.is_valid_number(phone):
+                self.status = MessageStatus.NOT_VALID_PHONE_NUMBER
+        except NumberParseException:
+            self.status = MessageStatus.NOT_VALID_PHONE_NUMBER
+        self.status = MessageStatus.SANDED
+        return self

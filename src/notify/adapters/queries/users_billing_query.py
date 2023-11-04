@@ -180,3 +180,17 @@ class UserBillingQueryStorage:
         elif _filter.mac_equipment_delivered is False:
             query = query.where((self.dv.field_value != ""))
         return query
+
+    def get_groups(self):
+        query = MySQLQuery.from_(self.grp).select(
+            self.grp.grp_id,
+            self.grp.grp_name,
+        )
+        return query
+
+    def get_packets(self):
+        query = MySQLQuery.from_(self.pl).select(
+            self.pl.id,
+            self.pl.name,
+        )
+        return query

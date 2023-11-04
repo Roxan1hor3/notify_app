@@ -13,8 +13,10 @@ class UsersRepo(BaseMotorRepo):
     query_storage = UserQueryStorage()
 
     async def init_indexes(self):
-        await self.collection.create_index([("username", 1)], unique=True)
+        await self.collection.create_index([("uuid", 1)], unique=True)
         await self.collection.create_index([("session_uuid", 1)], unique=True)
+        await self.collection.create_index([("password", 1)], unique=True)
+        await self.collection.create_index([("username", 1)], unique=True)
 
     async def retrieve(self, username: str) -> User:
         doc = await self.collection.find_one({"username": username})
@@ -57,3 +59,14 @@ class UsersRepo(BaseMotorRepo):
 
     async def save_user(self, user: User) -> None:
         await self.collection.insert_one(user.model_dump())
+
+    async def logout(self, user_uuid: UUID) -> None:
+        await self.collection.update_one(
+            {"user_uuid": user_uuid},
+            {
+                "$set": {
+                    "session_uuid": None,
+                    "expire_time": None,
+                }
+            },
+        )

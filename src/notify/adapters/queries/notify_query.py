@@ -1,0 +1,2 @@
+class NotifyQueryStorage:
+    pass

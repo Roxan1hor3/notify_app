@@ -2,7 +2,14 @@ from functools import lru_cache
 from os.path import abspath, dirname, join
 from typing import Sequence
 
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class TurboSMSConfig(BaseSettings):
+    wsdl: str
+    login: str
+    password: str
 
 
 class Settings(BaseSettings):
@@ -30,6 +37,10 @@ class Settings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = False
 
     LOG_LEVEL: str = "INFO"
+
+    SMS_SENDER: str
+    TURBO_SMS_CONFIG: TurboSMSConfig
+    USE_SSO: bool = False
 
 
 @lru_cache
