@@ -52,7 +52,7 @@ class TurboSMSClient:
                 logger.warning(
                     "TurboSMSService: Message sending error %s, %s", destination, text
                 )
-                res = False
+                ok = False
         except Exception:
             ok = False
             logger.exception(

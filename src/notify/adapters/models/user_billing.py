@@ -2,7 +2,7 @@ from typing import Annotated
 
 import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
-from pydantic import BaseModel, model_validator, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.notify.adapters.models.message import MessageStatus
 
@@ -27,6 +27,7 @@ class UserBilling(BaseModel):
 
 class UserBillingFilter(BaseModel):
     group_ids: list[int] | None = None
+    packet_ids: list[int] | None = None
     balance_gte: float | None = None
     balance_lte: float | None = None
     user_active: bool | None = None

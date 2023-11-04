@@ -1,3 +1,4 @@
+from pprint import pprint
 from typing import Any
 
 from pypika import Criterion, MySQLQuery, Table, functions
@@ -21,10 +22,16 @@ class UserBillingQueryStorage:
             _filters.append((self.pl.name != "[1000]0."))
         if _filter.group_ids is not None:
             _filters.append((self.grp.grp_id.isin(_filter.group_ids)))
+        if _filter.packet_ids is not None:
+            _filters.append((self.pl.id.isin(_filter.packet_ids)))
         if _filter.balance_gte is not None:
-            _filters.append((self.us.balance >= _filter.balance_gte))
+            _filters.append(
+                (self.us.balance - self.us_trf.submoney >= _filter.balance_gte)
+            )
         if _filter.balance_lte is not None:
-            _filters.append((self.us.balance <= _filter.balance_lte))
+            _filters.append(
+                (self.us.balance - self.us_trf.submoney <= _filter.balance_lte)
+            )
         if _filter.fee_more_than_balance is not None:
             _filters.append((self.us_trf.submoney >= self.us.balance))
         return _filters
@@ -121,7 +128,7 @@ class UserBillingQueryStorage:
                 self.us.fio,
                 self.us_trf.submoney.as_("fee"),
                 self.us.comment,
-                self.us_trf.startmoney.as_("balance"),
+                (self.us.balance - self.us_trf.submoney).as_("balance"),
                 self.pl.name.as_("packet_name"),
                 subquery_phone_number.phone_number.as_("phone_number"),
                 subquery_phone_number.max_time.as_("phone_number_time"),

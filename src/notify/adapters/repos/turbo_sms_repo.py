@@ -1,4 +1,3 @@
-
 from src.notify.adapters.repos.base import BaseRepository
 from src.notify.clients.turmo_sms_client import TurboSMSClient
 from src.notify.config import TurboSMSConfig
@@ -13,8 +12,8 @@ class TurboSMSRepo(BaseRepository):
             turbo_sms_config=turbo_sms_config, sender=sender, use_sso=use_sso
         )
 
-    async def send_billing_user_sms(self, phonenumbers: list[str], text: str):
-        await self.turbo_sms_client.send_sms(
+    async def send_billing_user_sms(self, phonenumbers: list[str], text: str) -> bool:
+        return await self.turbo_sms_client.send_sms(
             destination=",".join(phonenumbers), text=text
         )
 

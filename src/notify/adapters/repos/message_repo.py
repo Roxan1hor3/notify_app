@@ -20,5 +20,8 @@ class MessageRepo(BaseMotorRepo):
         bulk_messages_inserts = [
             InsertOne(document=message.model_dump()) for message in messages
         ]
-        await self.bulk_write(bulk_messages_inserts, session=session),
+        count = len(bulk_messages_inserts)
+        limit = 100
+        for offset in range(0, count, limit):
+            await self.bulk_write(bulk_messages_inserts[offset: offset+limit], session=session),
         return messages

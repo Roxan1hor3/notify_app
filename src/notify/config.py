@@ -2,7 +2,6 @@ from functools import lru_cache
 from os.path import abspath, dirname, join
 from typing import Sequence
 
-from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

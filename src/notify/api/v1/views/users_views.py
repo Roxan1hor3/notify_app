@@ -9,10 +9,12 @@ from src.notify.adapters.services.notify_service import NotifyService
 from src.notify.adapters.services.user_service import UserService
 from src.notify.api.dependencies.auth import get_authenticated_user_from_session_id
 from src.notify.api.dependencies.services import get_notify_service, get_user_service
+from src.notify.api.v1.schemas.notify import NotifyListResponseSchema, NotifyQueryParams
 from src.notify.api.v1.schemas.users_schemas import (
     BillingFiltersResponseSchema,
     QueryUserNotifySchema,
     validate_groups,
+    validate_packets,
 )
 
 notifies_router = APIRouter(
@@ -33,11 +35,14 @@ NotifyService = Annotated[NotifyService, Depends(get_notify_service)]
 async def get_user_list(
     request: Request,
     user_service: UserService,
-    group_ids: None | list[str] = Depends(validate_groups),
+    groups: None | list[str] = Depends(validate_groups),
+    packets: None | list[str] = Depends(validate_packets),
     params: QueryUserNotifySchema = Depends(),
 ):
     user_notify_file = await user_service.get_user_notify_file(
-        params=params, group_ids=group_ids
+        params=params,
+        group_ids=groups,
+        packet_ids=packets,
     )
     return FileResponse(
         user_notify_file,
@@ -70,7 +75,6 @@ async def get_user_list(
     current_balance = await notify_service.get_current_turbo_sms_balance()
     return {"current_balance": current_balance}
 
-
 @notifies_router.post(
     "/send_sms_by_file/",
     status_code=status.HTTP_200_OK,
@@ -92,3 +96,17 @@ async def get_user_list(
         filename=f"notify_report_file.csv",
         media_type="text/csv",
     )
+
+
+@notifies_router.get(
+    "/notify_history/",
+    response_model=NotifyListResponseSchema,
+    status_code=status.HTTP_200_OK,
+)
+async def get_notify_list(
+    request: Request,
+    params: Annotated[NotifyQueryParams, Depends()],
+    notify_service: NotifyService,
+):
+    count, notifies = await notify_service.get_notifies_list(params=params)
+    return {"count": count, "results": notifies}

@@ -18,6 +18,7 @@ from src.notify.adapters.repos.message_repo import MessageRepo
 from src.notify.adapters.repos.notify_repo import NotifyRepo
 from src.notify.adapters.repos.turbo_sms_repo import TurboSMSRepo
 from src.notify.adapters.services.base import BaseService, ServiceError
+from src.notify.api.v1.schemas.notify import NotifyQueryParams
 from src.notify.config import TurboSMSConfig
 
 logger = logging.getLogger(__name__)
@@ -60,8 +61,12 @@ class NotifyService(BaseService):
         self.turbo_sms_repo = TurboSMSRepo(
             turbo_sms_config=turbo_sms_config, sender=sender, use_sso=use_sso
         )
-        self.notify_repo = await NotifyRepo.create_repo(db_connection=mongo_db_connection)
-        self.message_repo = await MessageRepo.create_repo(db_connection=mongo_db_connection)
+        self.notify_repo = await NotifyRepo.create_repo(
+            db_connection=mongo_db_connection
+        )
+        self.message_repo = await MessageRepo.create_repo(
+            db_connection=mongo_db_connection
+        )
 
         return self
 
@@ -98,7 +103,6 @@ class NotifyService(BaseService):
             writer.writeheader()
             user_billing_messages_data = []
             for row in csv_reader:
-                print(row)
                 try:
                     message = UserBillingMessageData(**row)
                 except ValidationError:
@@ -106,11 +110,10 @@ class NotifyService(BaseService):
                         message="File must contain id and phone_number columns."
                     )
                 if message.phone_number in repeated_phone_numbers:
-                    message.status = MessageStatus
+                    message.status = MessageStatus.PHONE_NUMBER_IS_REPEATED
                 repeated_phone_numbers.append(message.phone_number)
 
                 user_billing_messages_data.append(message)
-
                 writer.writerow({**row, "Статус відправки": message.status})
             try:
                 async with self.notify_repo.start_transaction() as session:
@@ -134,7 +137,7 @@ class NotifyService(BaseService):
                         ],
                         session=session,
                     )
-                    await self.turbo_sms_repo.send_billing_user_sms(
+                    res = await self.turbo_sms_repo.send_billing_user_sms(
                         phonenumbers=[
                             message.phone_number
                             for message in messages
@@ -142,6 +145,8 @@ class NotifyService(BaseService):
                         ],
                         text=message_text,
                     )
+                    if res is not True:
+                        raise ServiceError(message="Unexpected Error. Please try again.")
             except Exception as e:
                 logger.error("Unexpected Error.")
                 logger.error(str(e))
@@ -151,3 +156,13 @@ class NotifyService(BaseService):
 
     async def get_current_turbo_sms_balance(self):
         return await self.turbo_sms_repo.get_current_balance()
+
+    async def get_notifies_list(self, params: NotifyQueryParams):
+        count = await self.notify_repo.get_notify_count(username=params.username)
+        results = await self.notify_repo.get_list(
+            username=params.username,
+            ordering=params.ordering,
+            limit=params.limit,
+            offset=params.offset,
+        )
+        return count, results

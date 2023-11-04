@@ -63,9 +63,14 @@ class UserService(BaseService):
         return self
 
     async def get_user_notify_file(
-        self, params: QueryUserNotifySchema, group_ids: list[int] = None
+        self,
+        params: QueryUserNotifySchema,
+        group_ids: list[int] = None,
+        packet_ids: list[int] = None,
     ) -> str:
-        _filter = UserBillingFilter(**params.model_dump(), group_ids=group_ids)
+        _filter = UserBillingFilter(
+            **params.model_dump(), group_ids=group_ids, packet_ids=packet_ids
+        )
         limit = 1000
         count = await self.users_billing_repo.get_users_count(_filter=_filter)
         with open(self.user_notify_file, mode="w") as csvfile:
@@ -85,7 +90,7 @@ class UserService(BaseService):
                             "IP": user.ip,
                             "Абонент": user.fio,
                             "Абоненська плата": user.fee,
-                            "Баланс": user.balance,
+                            "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
                             "Номер телефона": user.phone_number,
