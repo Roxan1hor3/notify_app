@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "notify-app"
+version = "0.1.0"
+description = ""
+authors = ["Roxan1hor333 <Roxan1hor333@gmail.com>"]
+readme = "README.md"
+packages = [{include = "notify_app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104.0"
+uvicorn = "^0.23.2"
+pydantic = "^2.4.2"
+pydantic-settings = "^2.0.3"
+motor = "^3.3.1"
+aiomysql = "^0.2.0"
+pypika = "^0.48.9"
+pre-commit = "^3.5.0"
+typer = "^0.9.0"
+zeep = "^4.2.1"
+httpx = "^0.25.0"
+python-magic = "^0.4.27"
+phonenumbers = "^8.13.24"
+python-multipart = "^0.0.6"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
