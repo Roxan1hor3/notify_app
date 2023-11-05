@@ -4,7 +4,6 @@ version = "0.1.0"
 description = ""
 authors = ["Roxan1hor333 <Roxan1hor333@gmail.com>"]
 readme = "README.md"
-packages = [{include = "notify_app"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

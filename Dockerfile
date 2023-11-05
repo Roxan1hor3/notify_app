@@ -10,3 +10,5 @@ COPY ./poetry.lock /app/poetry.lock
 COPY ./pyproject.toml /app/pyproject.toml
 COPY . /app
 RUN poetry install
+RUN pip install --ignore-installed uvicorn==0.20.0
+CMD python3 -m src.entrypoints.notify_asgi
