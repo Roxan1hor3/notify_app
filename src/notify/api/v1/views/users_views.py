@@ -76,6 +76,7 @@ async def get_user_list(
     current_balance = await notify_service.get_current_turbo_sms_balance()
     return {"current_balance": current_balance}
 
+
 @notifies_router.post(
     "/send_sms_by_file/",
     status_code=status.HTTP_200_OK,
@@ -128,6 +129,3 @@ async def get_notify_list(
         filename=f"notify_report_file.csv",
         media_type="text/csv",
     )
-
-
-

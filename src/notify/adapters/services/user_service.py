@@ -2,7 +2,6 @@ import csv
 import logging
 from datetime import datetime, timedelta
 from os import path
-from typing import Self
 from uuid import UUID
 
 from aiomysql import Connection

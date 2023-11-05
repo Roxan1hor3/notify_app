@@ -1,7 +1,7 @@
 import logging
 from abc import ABC
 from contextlib import asynccontextmanager
-from typing import Self, Type
+from typing import Type
 
 import aiomysql
 from aiomysql import Connection

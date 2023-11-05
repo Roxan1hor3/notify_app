@@ -4,7 +4,6 @@ from csv import DictReader
 from datetime import datetime
 from io import StringIO
 from os import path
-from typing import Self
 from uuid import UUID
 
 import magic
@@ -15,7 +14,10 @@ from pydantic import ValidationError
 
 from src.notify.adapters.models.message import Message, MessageStatus
 from src.notify.adapters.models.notify import Notify
-from src.notify.adapters.models.user_billing import UserBillingMessageData, UserBillingFilter
+from src.notify.adapters.models.user_billing import (
+    UserBillingFilter,
+    UserBillingMessageData,
+)
 from src.notify.adapters.repos.message_repo import MessageRepo
 from src.notify.adapters.repos.notify_repo import NotifyRepo
 from src.notify.adapters.repos.turbo_sms_repo import TurboSMSRepo
@@ -169,7 +171,9 @@ class NotifyService(BaseService):
                         text=message_text,
                     )
                     if res is not True:
-                        raise ServiceError(message="Unexpected Error. Please try again.")
+                        raise ServiceError(
+                            message="Unexpected Error. Please try again."
+                        )
             except Exception as e:
                 logger.error("Unexpected Error.")
                 logger.error(str(e))
@@ -196,12 +200,15 @@ class NotifyService(BaseService):
         user_id_message_map = {message.user_id: message for message in messages}
         with open(self.user_notify_report, mode="w") as csvfile:
             writer = csv.DictWriter(
-                csvfile, fieldnames=[*self.USER_NOTIFY_REPORT_FILE_FIELDS, "Статус відправки"]
+                csvfile,
+                fieldnames=[*self.USER_NOTIFY_REPORT_FILE_FIELDS, "Статус відправки"],
             )
             _filter = UserBillingFilter(_ids=user_id_message_map.values())
             count = await self.users_billing_repo.get_users_count(_filter=_filter)
             for offset in range(0, count, limit):
-                users = await self.users_billing_repo.get_list(_filter=_filter, offset=offset, limit=limit)
+                users = await self.users_billing_repo.get_list(
+                    _filter=_filter, offset=offset, limit=limit
+                )
                 [
                     writer.writerow(
                         {
@@ -225,10 +232,9 @@ class NotifyService(BaseService):
                             "Час обновлення MAC адреса": datetime.fromtimestamp(
                                 user.mac_time
                             ),
-                            "Статус відправки": user_id_message_map[user.id].status
+                            "Статус відправки": user_id_message_map[user.id].status,
                         }
                     )
                     for user in users
                 ]
         return self.user_notify_report
-
