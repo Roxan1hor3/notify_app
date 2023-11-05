@@ -75,7 +75,7 @@ class NotifyService(BaseService):
         turbo_sms_config: TurboSMSConfig,
         sender: str,
         use_sso: bool,
-    ) -> Self:
+    ):
         self = cls(static_dir_path=static_dir_path)
 
         self.turbo_sms_repo = TurboSMSRepo(

@@ -32,7 +32,7 @@ class BaseAioMySqlRepo(BaseRepository):
         self._collection = None
 
     @classmethod
-    async def create_repo(cls, connection: Connection) -> Self:
+    async def create_repo(cls, connection: Connection):
         """Asynchronous repository initialization"""
         repo = cls()
         repo.connection = connection
@@ -55,7 +55,7 @@ class BaseMotorRepo(BaseRepository):
         self._collection = None
 
     @classmethod
-    async def create_repo(cls, db_connection: AsyncIOMotorDatabase) -> Self:
+    async def create_repo(cls, db_connection: AsyncIOMotorDatabase):
         """Asynchronous repository initialization"""
         repo = cls()
         repo.database = db_connection

@@ -52,7 +52,7 @@ class UserService(BaseService):
         mysql_db_connection: Connection,
         mongo_db_connection: AsyncIOMotorDatabase,
         static_dir_path,
-    ) -> Self:
+    ):
         self = cls(static_dir_path=static_dir_path)
 
         self.users_billing_repo = await UsersBillingRepo.create_repo(
