@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from src.notify.api.dependencies import services
+from src.notify.api.exception_handling import attach_exception_handlers
 from src.notify.api.v1.router import v1_router
 from src.notify.config import get_settings
 from src.notify.extensions.db import create_mongo_connection, get_my_sql_db_connection
@@ -32,7 +33,7 @@ def create_app() -> FastAPI:
 
     app.include_router(v1_router, prefix="/api")
 
-    # attach_exception_handlers(app)
+    attach_exception_handlers(app)
 
     register_events(app=app)
 
