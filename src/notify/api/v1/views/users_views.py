@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from starlette import status
@@ -110,3 +111,23 @@ async def get_notify_list(
 ):
     count, notifies = await notify_service.get_notifies_list(params=params)
     return {"count": count, "results": notifies}
+
+
+@notifies_router.get(
+    "/notify_report_file/",
+    status_code=status.HTTP_200_OK,
+)
+async def get_notify_list(
+    request: Request,
+    notify_uuid: UUID,
+    notify_service: NotifyService,
+):
+    notify_report = await notify_service.get_notify_report(notify_uuid=notify_uuid)
+    return FileResponse(
+        notify_report,
+        filename=f"notify_report_file.csv",
+        media_type="text/csv",
+    )
+
+
+

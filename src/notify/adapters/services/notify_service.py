@@ -1,9 +1,11 @@
 import csv
 import logging
 from csv import DictReader
+from datetime import datetime
 from io import StringIO
 from os import path
 from typing import Self
+from uuid import UUID
 
 import magic
 from aiomysql import Connection
@@ -13,10 +15,11 @@ from pydantic import ValidationError
 
 from src.notify.adapters.models.message import Message, MessageStatus
 from src.notify.adapters.models.notify import Notify
-from src.notify.adapters.models.user_billing import UserBillingMessageData
+from src.notify.adapters.models.user_billing import UserBillingMessageData, UserBillingFilter
 from src.notify.adapters.repos.message_repo import MessageRepo
 from src.notify.adapters.repos.notify_repo import NotifyRepo
 from src.notify.adapters.repos.turbo_sms_repo import TurboSMSRepo
+from src.notify.adapters.repos.user_biilling_repo import UsersBillingRepo
 from src.notify.adapters.services.base import BaseService, ServiceError
 from src.notify.api.v1.schemas.notify import NotifyQueryParams
 from src.notify.config import TurboSMSConfig
@@ -35,10 +38,27 @@ class NotifyService(BaseService):
         "text/x-comma-separated-values",
         "text/tab-separated-values",
     ]
+    USER_NOTIFY_REPORT_FILE_FIELDS = (
+        "Абонент ID",
+        "Група",
+        "IP",
+        "Абонент",
+        "Абоненська плата",
+        "Баланс",
+        "Пакет",
+        "Коментарій",
+        "Номер телефона",
+        "Час обновлення телефона",
+        "Сирійний номер ONU",
+        "Час обновлення сирійного номера ONU",
+        "MAC адрес",
+        "Час обновлення MAC адреса",
+    )
 
     turbo_sms_repo: TurboSMSRepo
     notify_repo: NotifyRepo
     message_repo: MessageRepo
+    users_billing_repo: UsersBillingRepo
 
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
@@ -66,6 +86,9 @@ class NotifyService(BaseService):
         )
         self.message_repo = await MessageRepo.create_repo(
             db_connection=mongo_db_connection
+        )
+        self.users_billing_repo = await UsersBillingRepo.create_repo(
+            mysql_db_connection
         )
 
         return self
@@ -166,3 +189,46 @@ class NotifyService(BaseService):
             offset=params.offset,
         )
         return count, results
+
+    async def get_notify_report(self, notify_uuid: UUID) -> str:
+        limit = 1000
+        messages = await self.message_repo.get_list(notify_uuid=notify_uuid)
+        user_id_message_map = {message.user_id: message for message in messages}
+        with open(self.user_notify_report, mode="w") as csvfile:
+            writer = csv.DictWriter(
+                csvfile, fieldnames=[*self.USER_NOTIFY_REPORT_FILE_FIELDS, "Статус відправки"]
+            )
+            _filter = UserBillingFilter(_ids=user_id_message_map.values())
+            count = await self.users_billing_repo.get_users_count(_filter=_filter)
+            for offset in range(0, count, limit):
+                users = await self.users_billing_repo.get_list(_filter=_filter, offset=offset, limit=limit)
+                [
+                    writer.writerow(
+                        {
+                            "Абонент ID": user.id,
+                            "Група": user.grp_id,
+                            "IP": user.ip,
+                            "Абонент": user.fio,
+                            "Абоненська плата": user.fee,
+                            "Баланс": round(user.balance),
+                            "Пакет": user.packet_name,
+                            "Коментарій": user.comment,
+                            "Номер телефона": user_id_message_map[user.id].phone_number,
+                            "Час обновлення телефона": datetime.fromtimestamp(
+                                user.phone_number_time
+                            ),
+                            "Сирійний номер ONU": user.sn_onu,
+                            "Час обновлення сирійного номера ONU": datetime.fromtimestamp(
+                                user.sn_onu_time
+                            ),
+                            "MAC адрес": user.mac,
+                            "Час обновлення MAC адреса": datetime.fromtimestamp(
+                                user.mac_time
+                            ),
+                            "Статус відправки": user_id_message_map[user.id].status
+                        }
+                    )
+                    for user in users
+                ]
+        return self.user_notify_report
+

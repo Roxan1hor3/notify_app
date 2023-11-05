@@ -26,7 +26,7 @@ async def login(
 ):
     session_uuid = uuid.uuid4()
     await user_service.login(user_uuid=user.uuid, session_uuid=session_uuid)
-    return {"message": "Logged in successfully", "session_uuid": session_uuid}
+    return {"username": user.username, "session_uuid": session_uuid, "uuid": user.uuid}
 
 
 @auth_router.post(
@@ -38,11 +38,3 @@ async def logout(
 ):
     await user_service.logout(user_uuid=user.uuid)
     return {"message": "Logout in successfully"}
-
-
-@auth_router.get(
-    "/current_user",
-    status_code=status.HTTP_200_OK,
-)
-async def current_user(user: Annotated[User, Depends(authenticate_user)]):
-    return {"username": user.username}

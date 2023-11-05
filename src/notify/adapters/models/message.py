@@ -28,7 +28,7 @@ class Message(BaseEntityModel):
     notify_uuid: UUID
     user_id: int
     phone_number: str
-    created_at: Annotated[UUID, Field(default_factory=_default_datetime)]
+    created_at: Annotated[datetime, Field(default_factory=_default_datetime)]
     status: MessageStatus
 
     @staticmethod

@@ -26,6 +26,7 @@ class UserBilling(BaseModel):
 
 
 class UserBillingFilter(BaseModel):
+    ids: list[int] | None = None
     group_ids: list[int] | None = None
     packet_ids: list[int] | None = None
     balance_gte: float | None = None

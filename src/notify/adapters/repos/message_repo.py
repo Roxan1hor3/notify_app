@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from motor.core import AgnosticClientSession
 from pymongo import InsertOne
 
@@ -25,3 +27,13 @@ class MessageRepo(BaseMotorRepo):
         for offset in range(0, count, limit):
             await self.bulk_write(bulk_messages_inserts[offset: offset+limit], session=session),
         return messages
+
+    async def get_list(self, notify_uuid: UUID) -> list[Message]:
+        results = (
+            await self.collection.find(
+                {} if notify_uuid is None else {"notify_uuid": notify_uuid}
+            )
+            .to_list(length=None)
+        )
+        return [self.MODEL(**res) for res in results]
+

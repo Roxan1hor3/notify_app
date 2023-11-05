@@ -16,6 +16,8 @@ class UserBillingQueryStorage:
 
     def _filter(self, _filter: UserBillingFilter) -> list[bool | Any]:
         _filters = []
+        if _filter.ids is False:
+            _filters.append((self.us.id.isin(_filter.ids)))
         if _filter.user_active is False:
             _filters.append((self.pl.name == "[1000]0."))
         elif _filter.user_active is True:
