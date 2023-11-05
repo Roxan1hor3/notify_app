@@ -12,10 +12,6 @@ class BaseArgs(BaseModel):
 class BaseMatchParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-class StrEnum(str, Enum):
-    pass
-
-
 class RetrieveManyArgs(BaseArgs):
     ordering: str | None = None
     offset: int
