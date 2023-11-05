@@ -1,11 +1,10 @@
 from datetime import datetime
-from enum import StrEnum
 from typing import Annotated
 from uuid import UUID, uuid4
 
 from pydantic import Field
 
-from src.notify.adapters.models.base import BaseEntityModel
+from src.notify.adapters.models.base import BaseEntityModel, StrEnum
 
 
 def _default_uuid():
