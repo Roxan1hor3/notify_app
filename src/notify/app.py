@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
         strict_slashes=True,
         **docs_args,
     )
-    setup_middleware(app)
+    # setup_middleware(app)
 
     app.include_router(v1_router, prefix="/api")
 
