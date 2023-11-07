@@ -33,6 +33,8 @@ class QueryUserNotifySchema(BaseModel):
     fee_more_than_balance: bool | None = None
     mac_equipment_delivered: bool | None = None
     sn_onu_equipment_delivered: bool | None = None
+    fio: str | None = None
+    is_auth: bool | None = None
 
 
 class BillingFiltersResponseSchema(BaseModel):

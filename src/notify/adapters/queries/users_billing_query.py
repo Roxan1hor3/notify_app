@@ -17,6 +17,12 @@ class UserBillingQueryStorage:
         _filters = []
         if _filter.ids is False:
             _filters.append((self.us.id.isin(_filter.ids)))
+        if _filter.fio is not None:
+            _filters.append((self.us.fio.like(f'{_filter.fio}%')))
+        if _filter.is_auth is False:
+            _filters.append((self.us.auth == "no"))
+        elif _filter.is_auth is True:
+            _filters.append((self.us.auth == "on"))
         if _filter.user_active is False:
             _filters.append((self.pl.name == "[1000]0."))
         elif _filter.user_active is True:
