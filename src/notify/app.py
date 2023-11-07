@@ -20,8 +20,8 @@ def create_app() -> FastAPI:
     docs_args = {}
     if settings.USE_DOCS:
         docs_args = {
-            "docs_url": "notify/api/docs/",
-            "openapi_url": "notify/api/openapi.json",
+            "docs_url": "/notify/api/docs/",
+            "openapi_url": "/notify/api/openapi.json",
         }
 
     app = FastAPI(
