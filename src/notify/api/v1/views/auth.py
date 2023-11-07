@@ -38,3 +38,11 @@ async def logout(
 ):
     await user_service.logout(user_uuid=user.uuid)
     return {"message": "Logout in successfully"}
+
+
+@auth_router.get(
+    "/profile",
+    status_code=status.HTTP_200_OK,
+)
+async def current_user(user: Annotated[User, Depends(authenticate_user)]):
+    return {"username": user.username}
