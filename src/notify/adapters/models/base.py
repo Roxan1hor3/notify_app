@@ -1,5 +1,4 @@
 from abc import ABC
-from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -11,6 +10,7 @@ class BaseArgs(BaseModel):
 
 class BaseMatchParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
 
 class RetrieveManyArgs(BaseArgs):
     ordering: str | None = None
