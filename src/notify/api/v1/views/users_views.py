@@ -8,7 +8,7 @@ from starlette.responses import FileResponse
 
 from src.notify.adapters.services.notify_service import NotifyService
 from src.notify.adapters.services.user_service import UserService
-from src.notify.api.dependencies.auth import get_authenticated_user_from_session_id
+from src.notify.api.dependencies.auth import authorization_user
 from src.notify.api.dependencies.services import get_notify_service, get_user_service
 from src.notify.api.v1.schemas.notify import NotifyListResponseSchema, NotifyQueryParams
 from src.notify.api.v1.schemas.users_schemas import (
@@ -21,7 +21,7 @@ from src.notify.api.v1.schemas.users_schemas import (
 notifies_router = APIRouter(
     prefix="/notify",
     tags=["notify"],
-    dependencies=[Depends(get_authenticated_user_from_session_id)],
+    dependencies=[Depends(authorization_user)],
 )
 
 UserService = Annotated[UserService, Depends(get_user_service)]
@@ -47,7 +47,7 @@ async def get_user_list(
     )
     return FileResponse(
         user_notify_file,
-        filename="user_notify_file.csv",
+        filename="new_users.csv",
         media_type="text/csv",
     )
 
@@ -129,3 +129,20 @@ async def get_notify_list(
         filename=f"notify_report_file.csv",
         media_type="text/csv",
     )
+
+
+@notifies_router.get(
+    "/profile",
+    status_code=status.HTTP_200_OK,
+)
+async def current_user(request: Request):
+    return {"username": request.state.username}
+
+
+@notifies_router.post(
+    "/logout",
+    status_code=status.HTTP_200_OK,
+)
+async def logout(request: Request, user_service: UserService):
+    await user_service.logout(user_uuid=request.state.user_uuid)
+    return {"message": "Logout in successfully"}

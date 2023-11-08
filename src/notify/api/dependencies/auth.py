@@ -1,65 +1,83 @@
-import base64
 import datetime
-import hashlib
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from pydantic import BaseModel
 from starlette import status
-from starlette.requests import Request
 
+from src.notify.adapters.models.user import User
 from src.notify.adapters.repos.exceptions import RepoObjectNotFound
 from src.notify.adapters.services.user_service import UserService
 from src.notify.api.dependencies.services import get_user_service
+from src.notify.config import Settings, get_settings
 
 UserService = Annotated[UserService, Depends(get_user_service)]
 invalid_credentials = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Invalid credentials",
-    headers={"WWW-Authenticate": "Basic"},
+    headers={"WWW-Authenticate": "Bearer"},
 )
-invalid_session_uuid = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Invalid session UUID",
-)
-session_uuid_expired = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Session UUID expired",
-)
-
-security = HTTPBasic()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
-async def authenticate_user(
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+
+def create_access_token(
+    secret_key: str,
+    algorithm: str,
+    data: dict,
+    expires_delta: datetime.timedelta | None = None,
+):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
+    return encoded_jwt
+
+
+async def get_current_user(
+    settings: Annotated[Settings, Depends(get_settings)],
     user_service: UserService,
-    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    token: Annotated[str, Depends(oauth2_scheme)],
 ):
     try:
-        user = await user_service.retrieve(username=credentials.username)
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        username: str = payload.get("sub")
+        if username is None:
+            raise invalid_credentials
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise invalid_credentials
+    try:
+        user = await user_service.retrieve(token_data.username)
     except RepoObjectNotFound:
         raise invalid_credentials
-    if user.password != hashlib.md5(credentials.password.encode()).hexdigest():
+    if user is None:
         raise invalid_credentials
+    if user.expire_time is None or user.expire_time < datetime.datetime.now():
+        raise invalid_credentials
+    if user.is_active is False:
+        raise HTTPException(status_code=400, detail="Inactive user")
     return user
 
 
-async def get_authenticated_user_from_session_id(
-    user_service: UserService, request: Request
+async def authorization_user(
+    request: Request, current_user: Annotated[User, Depends(get_current_user)]
 ):
-    session_uuid = request.cookies.get("session_uuid")
-    if session_uuid is None:
-        raise invalid_session_uuid
-    try:
-        user = await user_service.retrieve_bu_session_uuid(
-            session_uuid=UUID(
-                base64.b64decode(session_uuid.encode("utf-8")).decode("utf-8")
-            )
-        )
-    except RepoObjectNotFound:
-        raise invalid_credentials
-    if user.expire_time is None or user.expire_time < datetime.datetime.now():
-        raise session_uuid_expired
-    request.state.user_uuid = user.uuid
-    request.state.username = user.username
-    return request
+    request.state.user_uuid = current_user.uuid
+    request.state.username = current_user.username
+    return current_user

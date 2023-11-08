@@ -1,15 +1,20 @@
-import uuid
-from base64 import b64encode
+import hashlib
+from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 
-from src.notify.adapters.models.user import User
+from src.notify.adapters.repos.exceptions import RepoObjectNotFound
 from src.notify.adapters.services.user_service import UserService
-from src.notify.api.dependencies.auth import authenticate_user
+from src.notify.api.dependencies.auth import (
+    Token,
+    create_access_token,
+    invalid_credentials,
+)
 from src.notify.api.dependencies.services import get_user_service
-from src.notify.config import get_settings
+from src.notify.config import Settings, get_settings
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -21,39 +26,34 @@ UserService = Annotated[UserService, Depends(get_user_service)]
 
 @auth_router.post(
     "/login",
+    response_model=Token,
     status_code=status.HTTP_200_OK,
 )
 async def login(
-    response: Response,
+    # response: Response,
     user_service: UserService,
-    user: Annotated[User, Depends(authenticate_user)],
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    settings: Settings = Depends(get_settings),
 ):
-    session_uuid = uuid.uuid4()
-    expire_time = await user_service.login(user_uuid=user.uuid, session_uuid=session_uuid)
-    response.set_cookie(
-        key="session_uuid",
-        value=b64encode(str(session_uuid).encode("utf-8")).decode("utf-8"),
-        httponly=True,
-        max_age=int(expire_time.timestamp()),
-        domain=get_settings().API_HOST
+    try:
+        user = await user_service.retrieve(username=form_data.username)
+    except RepoObjectNotFound:
+        raise invalid_credentials
+    if user.password != hashlib.md5(form_data.password.encode()).hexdigest():
+        raise invalid_credentials
+    # response.set_cookie(
+    #     key="session_uuid",
+    #     value=b64encode(str(session_uuid).encode("utf-8")).decode("utf-8"),
+    #     httponly=True,
+    #     max_age=int(expire_time.timestamp()),
+    #     domain=get_settings().API_HOST
+    # )
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires,
+        algorithm=settings.ALGORITHM,
+        secret_key=settings.SECRET_KEY,
     )
-    return {"username": user.username, "session_uuid": session_uuid, "uuid": user.uuid}
-
-
-@auth_router.post(
-    "/logout",
-    status_code=status.HTTP_200_OK,
-)
-async def logout(
-    user_service: UserService, user: Annotated[User, Depends(authenticate_user)]
-):
-    await user_service.logout(user_uuid=user.uuid)
-    return {"message": "Logout in successfully"}
-
-
-@auth_router.get(
-    "/profile",
-    status_code=status.HTTP_200_OK,
-)
-async def current_user(user: Annotated[User, Depends(authenticate_user)]):
-    return {"username": user.username}
+    await user_service.login(user.username, access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}

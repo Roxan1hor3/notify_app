@@ -32,16 +32,14 @@ class UsersRepo(BaseMotorRepo):
 
     async def login(
         self,
-        user_uuid: UUID,
-        session_uuid: UUID,
+        username: str,
         expire_time: datetime,
         last_login_date: datetime,
     ):
         await self.collection.update_one(
-            {"uuid": user_uuid},
+            {"username": username},
             {
                 "$set": {
-                    "session_uuid": session_uuid,
                     "expire_time": expire_time,
                     "last_login_date": last_login_date,
                 }
@@ -65,7 +63,6 @@ class UsersRepo(BaseMotorRepo):
             {"user_uuid": user_uuid},
             {
                 "$set": {
-                    "session_uuid": None,
                     "expire_time": None,
                 }
             },

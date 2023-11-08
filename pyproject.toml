@@ -21,6 +21,8 @@ httpx = "^0.25.0"
 python-magic = "^0.4.27"
 phonenumbers = "^8.13.24"
 python-multipart = "^0.0.6"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

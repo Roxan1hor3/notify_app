@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     TURBO_SMS_CONFIG: TurboSMSConfig
     USE_SSO: bool = False
 
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
 
 @lru_cache
 def get_settings() -> Settings:

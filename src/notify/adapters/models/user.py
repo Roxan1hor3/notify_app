@@ -16,9 +16,9 @@ class User(BaseEntityModel):
     uuid: Annotated[UUID, Field(default_factory=_default_uuid)]
     username: str
     password: str
-    session_uuid: UUID | None = None
     last_login_date: datetime | None = None
     expire_time: datetime | None = None
+    is_active: bool = True
 
     @staticmethod
     def get_entity_name():
