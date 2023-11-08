@@ -9,6 +9,7 @@ from src.notify.adapters.models.user import User
 from src.notify.adapters.services.user_service import UserService
 from src.notify.api.dependencies.auth import authenticate_user
 from src.notify.api.dependencies.services import get_user_service
+from src.notify.config import get_settings
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -34,7 +35,7 @@ async def login(
         value=b64encode(str(session_uuid).encode("utf-8")).decode("utf-8"),
         httponly=True,
         max_age=int(expire_time.timestamp()),
-        secure=True
+        domain=get_settings().API_HOST
     )
     return {"username": user.username, "session_uuid": session_uuid, "uuid": user.uuid}
 
