@@ -23,11 +23,19 @@ UserService = Annotated[UserService, Depends(get_user_service)]
     status_code=status.HTTP_200_OK,
 )
 async def login(
-    response: Response, user_service: UserService, user: Annotated[User, Depends(authenticate_user)]
+    response: Response,
+    user_service: UserService,
+    user: Annotated[User, Depends(authenticate_user)],
 ):
     session_uuid = uuid.uuid4()
-    await user_service.login(user_uuid=user.uuid, session_uuid=session_uuid)
-    response.set_cookie(key="session_uuid", value=b64encode(str(session_uuid).encode('utf-8')).decode('utf-8'), httponly=True)
+    expire_time = await user_service.login(user_uuid=user.uuid, session_uuid=session_uuid)
+    response.set_cookie(
+        key="session_uuid",
+        value=b64encode(str(session_uuid).encode("utf-8")).decode("utf-8"),
+        httponly=True,
+        max_age=int(expire_time.timestamp()),
+        secure=True
+    )
     return {"username": user.username, "session_uuid": session_uuid, "uuid": user.uuid}
 
 

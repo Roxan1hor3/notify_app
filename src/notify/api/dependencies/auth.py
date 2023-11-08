@@ -52,7 +52,9 @@ async def get_authenticated_user_from_session_id(
         raise invalid_session_uuid
     try:
         user = await user_service.retrieve_bu_session_uuid(
-            session_uuid=UUID(base64.b64decode(session_uuid.encode('utf-8')).decode('utf-8'))
+            session_uuid=UUID(
+                base64.b64decode(session_uuid.encode("utf-8")).decode("utf-8")
+            )
         )
     except RepoObjectNotFound:
         raise invalid_credentials

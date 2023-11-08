@@ -2,6 +2,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 from os import path
+from typing import Tuple
 from uuid import UUID
 
 from aiomysql import Connection
@@ -116,14 +117,15 @@ class UserService(BaseService):
     async def retrieve_bu_session_uuid(self, session_uuid: UUID) -> User:
         return await self.users_repo.retrieve_bu_session_uuid(session_uuid=session_uuid)
 
-    async def login(self, user_uuid: UUID, session_uuid: UUID) -> UUID:
+    async def login(self, user_uuid: UUID, session_uuid: UUID) -> datetime:
+        expire_time = datetime.now() + timedelta(days=1)
         await self.users_repo.login(
             user_uuid=user_uuid,
             session_uuid=session_uuid,
-            expire_time=datetime.now() + timedelta(days=1),
+            expire_time=expire_time,
             last_login_date=datetime.now(),
         )
-        return session_uuid
+        return expire_time
 
     async def upload_new_users(self) -> None:
         """Imports data from the CSV file."""
