@@ -1,7 +1,8 @@
 import uuid
+from base64 import b64encode
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from starlette import status
 
 from src.notify.adapters.models.user import User
@@ -22,10 +23,11 @@ UserService = Annotated[UserService, Depends(get_user_service)]
     status_code=status.HTTP_200_OK,
 )
 async def login(
-    user_service: UserService, user: Annotated[User, Depends(authenticate_user)]
+    response: Response, user_service: UserService, user: Annotated[User, Depends(authenticate_user)]
 ):
     session_uuid = uuid.uuid4()
     await user_service.login(user_uuid=user.uuid, session_uuid=session_uuid)
+    response.set_cookie(key="session_uuid", value=b64encode(session_uuid).decode('utf-8'), httponly=True)
     return {"username": user.username, "session_uuid": session_uuid, "uuid": user.uuid}
 
 
