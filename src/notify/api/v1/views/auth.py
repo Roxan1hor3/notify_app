@@ -27,7 +27,7 @@ async def login(
 ):
     session_uuid = uuid.uuid4()
     await user_service.login(user_uuid=user.uuid, session_uuid=session_uuid)
-    response.set_cookie(key="session_uuid", value=b64encode(session_uuid).decode('utf-8'), httponly=True)
+    response.set_cookie(key="session_uuid", value=b64encode(str(session_uuid).encode('utf-8')).decode('utf-8'), httponly=True)
     return {"username": user.username, "session_uuid": session_uuid, "uuid": user.uuid}
 
 
