@@ -1,43 +1,37 @@
-version: '3'
+version: "3"
 
 services:
 
-  web:
-    build: ./nginx
-    container_name: "notify_nginx"
-    depends_on:
-      - fast_api
-    ports:
-      - "8082:80"
+  mongo0:
+    image: mongo
     networks:
-      - custom
+      mongo_network:
+        ipv4_address: 172.16.238.10
+    ports:
+      - 27017:27017
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
 
-  fast_api:
-    container_name: "notify_fast_api"
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"
-    depends_on:
-      - mongodb
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  mongo1:
+    image: mongo
     networks:
-      - custom
+      mongo_network:
+        ipv4_address: 172.16.238.11
+    ports:
+      - 27018:27017
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
 
-  mongodb:
-    container_name: "notify_mongo"
-    image: mongo:latest
-    env_file:
-      - .env
-    ports:
-      - "27017:27017"
+  mongo2:
+    image: mongo
     networks:
-      - custom
+      mongo_network:
+        ipv4_address: 172.16.238.12
+    ports:
+      - 27019:27017
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
 
 networks:
-  custom:
-    driver: bridge
+  mongo_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.238.0/24"
