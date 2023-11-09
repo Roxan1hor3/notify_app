@@ -40,3 +40,5 @@ class QueryUserNotifySchema(BaseModel):
 class BillingFiltersResponseSchema(BaseModel):
     groups: list[BillingGroup]
     packets: list[BillingPacket]
+    min_balance: float
+    max_balance: float

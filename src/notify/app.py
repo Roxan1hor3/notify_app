@@ -8,7 +8,10 @@ from src.notify.api.dependencies import services
 from src.notify.api.exception_handling import attach_exception_handlers
 from src.notify.api.v1.router import v1_router
 from src.notify.config import get_settings
-from src.notify.extensions.db import create_mongo_connection, get_my_sql_db_connection
+from src.notify.extensions.db import (
+    create_mongo_connection,
+    get_my_sql_db_connection_pool,
+)
 
 settings = get_settings()
 
@@ -55,12 +58,12 @@ def register_events(app: FastAPI):
     async def init_service_manager():
         await services.init_service_manager(
             settings=settings,
-            my_sql_connection=await get_my_sql_db_connection(
-                user=settings.MY_SQL_DB_USER,
+            my_sql_connection_pool=await get_my_sql_db_connection_pool(
                 host=settings.MY_SQL_DB_HOST,
                 port=settings.MY_SQL_DB_PORT,
-                db=settings.MY_SQL_DB_NAME,
+                user=settings.MY_SQL_DB_USER,
                 password=settings.MY_SQL_DB_PASSWORD,
+                db=settings.MY_SQL_DB_NAME,
                 loop=get_running_loop(),
             ),
             mongo_db_connection=create_mongo_connection(db_url=settings.MONGO_DB_URL),

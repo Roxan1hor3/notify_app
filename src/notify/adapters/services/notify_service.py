@@ -7,7 +7,7 @@ from os import path
 from uuid import UUID
 
 import magic
-from aiomysql import Connection
+from aiomysql import Pool
 from fastapi import UploadFile
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import ValidationError
@@ -71,7 +71,7 @@ class NotifyService(BaseService):
     @classmethod
     async def create_service(
         cls,
-        mysql_db_connection: Connection,
+        my_sql_connection_pool: Pool,
         mongo_db_connection: AsyncIOMotorDatabase,
         static_dir_path,
         turbo_sms_config: TurboSMSConfig,
@@ -90,7 +90,7 @@ class NotifyService(BaseService):
             db_connection=mongo_db_connection
         )
         self.users_billing_repo = await UsersBillingRepo.create_repo(
-            mysql_db_connection
+            my_sql_connection_pool
         )
 
         return self

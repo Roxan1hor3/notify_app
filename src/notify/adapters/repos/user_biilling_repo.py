@@ -43,3 +43,9 @@ class UsersBillingRepo(BaseAioMySqlRepo):
             await cur.execute(self.query_storage.get_packets().get_sql())
             results = await cur.fetchall()
             return [BillingPacket(**res) for res in results]
+
+    async def get_max_min_balances(self):
+        async with self.get_cursor() as cur:
+            await cur.execute(self.query_storage.get_max_min_balances().get_sql())
+            results = await cur.fetchall()
+            return results["max_balance"], results["min_balance"]

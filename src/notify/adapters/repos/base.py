@@ -1,10 +1,10 @@
 import logging
 from abc import ABC
 from contextlib import asynccontextmanager
+from multiprocessing import Pool
 from typing import Type
 
 import aiomysql
-from aiomysql import Connection
 from motor.core import AgnosticClientSession
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from pydantic import BaseModel
@@ -25,24 +25,24 @@ class BaseRepository(ABC):
 class BaseAioMySqlRepo(BaseRepository):
     MODEL: Type[BaseModel]
     query_storage = BaseQueriesStorage()
-    connection: Connection
+    pool: Pool
 
     def __init__(self) -> None:
         super().__init__()
         self._collection = None
 
     @classmethod
-    async def create_repo(cls, connection: Connection):
+    async def create_repo(cls, my_sql_connection_pool: Pool):
         """Asynchronous repository initialization"""
         repo = cls()
-        repo.connection = connection
+        repo.pool = my_sql_connection_pool
         return repo
 
     @asynccontextmanager
     async def get_cursor(self) -> None:
-        cursor = await self.connection.cursor(aiomysql.DictCursor)
-        yield cursor
-        await cursor.close()
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                yield cur
 
 
 class BaseMotorRepo(BaseRepository):

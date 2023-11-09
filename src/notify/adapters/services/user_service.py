@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from os import path
 
-from aiomysql import Connection
+from aiomysql import Pool
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import ValidationError
 
@@ -47,15 +47,13 @@ class UserService(BaseService):
     @classmethod
     async def create_service(
         cls,
-        mysql_db_connection: Connection,
+        mysql_db_pool: Pool,
         mongo_db_connection: AsyncIOMotorDatabase,
         static_dir_path,
     ):
         self = cls(static_dir_path=static_dir_path)
 
-        self.users_billing_repo = await UsersBillingRepo.create_repo(
-            mysql_db_connection
-        )
+        self.users_billing_repo = await UsersBillingRepo.create_repo(mysql_db_pool)
         self.users_repo = await UsersRepo.create_repo(mongo_db_connection)
 
         return self
@@ -173,7 +171,13 @@ class UserService(BaseService):
     async def get_filters(self):
         groups = await self.users_billing_repo.get_groups_filters()
         packets = await self.users_billing_repo.get_packets_filters()
-        return {"groups": groups, "packets": packets}
+        # max_balance, min_balance = await self.users_billing_repo.get_max_min_balances()
+        return {
+            "groups": groups,
+            "packets": packets,
+            "max_balance": 100,
+            "min_balance": 100,
+        }
 
     async def logout(self, user_uuid) -> None:
         await self.users_repo.logout(

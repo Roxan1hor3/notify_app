@@ -1,18 +1,18 @@
 from asyncio import AbstractEventLoop
 
 import aiomysql
-from aiomysql import Connection
+from aiomysql import Pool
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.uri_parser import parse_uri
 
 
-async def get_my_sql_db_connection(
+async def get_my_sql_db_connection_pool(
     host: str, port: int, user: str, password: str, db: str, loop: AbstractEventLoop
-) -> Connection:
-    connection = await aiomysql.connect(
+) -> Pool:
+    pool = await aiomysql.create_pool(
         host=host, port=port, user=user, password=password, db=db, loop=loop
     )
-    return connection
+    return pool
 
 
 def create_mongo_connection(db_url: str) -> AsyncIOMotorClient:

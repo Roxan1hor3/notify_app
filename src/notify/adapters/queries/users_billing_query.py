@@ -208,3 +208,11 @@ class UserBillingQueryStorage:
             self.pl.name,
         )
         return query
+
+    def get_max_min_balances(self):
+        query = MySQLQuery.from_(table).select(
+            fn.Max(table.column1 - table.column2).as_("max_difference"),
+            fn.Min(table.column1 - table.column2).as_("min_difference"),
+        )
+
+        return query
