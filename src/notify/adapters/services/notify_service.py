@@ -123,7 +123,7 @@ class NotifyService(BaseService):
         repeated_phone_numbers = []
         with open(self.user_notify_report, mode="w") as csvfile:
             writer = csv.DictWriter(
-                csvfile, fieldnames=[*csv_reader.fieldnames, "Статус відправки"]
+                csvfile, fieldnames=[*csv_reader.fieldnames, "Статус відправки"], delimiter=";"
             )
             writer.writeheader()
             user_billing_messages_data = []

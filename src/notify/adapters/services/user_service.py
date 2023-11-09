@@ -70,7 +70,7 @@ class UserService(BaseService):
         limit = 1000
         count = await self.users_billing_repo.get_users_count(_filter=_filter)
         with open(self.user_notify_file, mode="w") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=self.USER_NOTIFY_FILE_FIELDS)
+            writer = csv.DictWriter(csvfile, fieldnames=self.USER_NOTIFY_FILE_FIELDS, delimiter=";")
             writer.writeheader()
             for offset in range(0, count, limit):
                 users = await self.users_billing_repo.get_list(
