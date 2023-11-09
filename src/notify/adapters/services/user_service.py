@@ -171,12 +171,12 @@ class UserService(BaseService):
     async def get_filters(self):
         groups = await self.users_billing_repo.get_groups_filters()
         packets = await self.users_billing_repo.get_packets_filters()
-        # max_balance, min_balance = await self.users_billing_repo.get_max_min_balances()
+        max_balance, min_balance = await self.users_billing_repo.get_max_min_balances()
         return {
             "groups": groups,
             "packets": packets,
-            "max_balance": 100,
-            "min_balance": 100,
+            "max_balance": max_balance,
+            "min_balance": min_balance,
         }
 
     async def logout(self, user_uuid) -> None:

@@ -1,6 +1,6 @@
 from typing import Any
 
-from pypika import Criterion, MySQLQuery, Table, functions
+from pypika import Criterion, MySQLQuery, Order, Table, functions
 from pypika.queries import QueryBuilder
 
 from src.notify.adapters.models.user_billing import UserBillingFilter
@@ -209,10 +209,20 @@ class UserBillingQueryStorage:
         )
         return query
 
-    def get_max_min_balances(self):
-        query = MySQLQuery.from_(table).select(
-            fn.Max(table.column1 - table.column2).as_("max_difference"),
-            fn.Min(table.column1 - table.column2).as_("min_difference"),
+    def get_max_balance(self):
+        query = (
+            MySQLQuery.from_(self.us_trf)
+            .select((self.us_trf.startmoney - self.us_trf.submoney).as_("max_balance"))
+            .limit(1)
+            .orderby("max_balance", order=Order.desc)
         )
+        return query
 
+    def get_min_balance(self):
+        query = (
+            MySQLQuery.from_(self.us_trf)
+            .select((self.us_trf.startmoney - self.us_trf.submoney).as_("min_balance"))
+            .limit(1)
+            .orderby("min_balance", order=Order.asc)
+        )
         return query
