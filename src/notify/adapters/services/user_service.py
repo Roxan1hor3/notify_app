@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from os import path
 
+import xlsxwriter
 from aiomysql import Pool
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import ValidationError
@@ -41,7 +42,7 @@ class UserService(BaseService):
 
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
-        self.user_notify_file = path.join(self.static_dir_path, "user_notify.csv")
+        self.user_notify_file = path.join(self.static_dir_path, "user_notify.xlsx")
         self.new_users_file = path.join(self.static_dir_path, "new_users.csv")
 
     @classmethod
@@ -69,42 +70,50 @@ class UserService(BaseService):
         )
         limit = 1000
         count = await self.users_billing_repo.get_users_count(_filter=_filter)
-        with open(self.user_notify_file, mode="w") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=self.USER_NOTIFY_FILE_FIELDS)
-            writer.writeheader()
-            for offset in range(0, count, limit):
-                users = await self.users_billing_repo.get_list(
-                    _filter=_filter,
-                    limit=limit,
-                    offset=offset,
+        workbook = xlsxwriter.Workbook(self.user_notify_file)
+        worksheet = workbook.add_worksheet()
+
+        for col_num, field in enumerate(self.USER_NOTIFY_FILE_FIELDS):
+            worksheet.write(0, col_num, field)
+        row = 1
+        for offset in range(0, count, limit):
+            users = await self.users_billing_repo.get_list(
+                _filter=_filter,
+                limit=limit,
+                offset=offset,
+            )
+            for user in users:
+                worksheet.write(row, 0, user.id)
+                worksheet.write(row, 1, user.grp_name)
+                worksheet.write(row, 2, user.ip)
+                worksheet.write(row, 3, user.fio)
+                worksheet.write(row, 4, user.fee)
+                worksheet.write(row, 5, round(user.balance))
+                worksheet.write(row, 6, user.packet_name)
+                worksheet.write(row, 7, user.comment)
+                worksheet.write(row, 8, user.phone_number)
+                worksheet.write(
+                    row,
+                    9,
+                    datetime.fromtimestamp(user.phone_number_time).strftime(
+                        "%Y-%m-%d %H:%M"
+                    ),
                 )
-                [
-                    writer.writerow(
-                        {
-                            "Абонент ID": user.id,
-                            "Група": user.grp_id,
-                            "IP": user.ip,
-                            "Абонент": user.fio,
-                            "Абоненська плата": user.fee,
-                            "Баланс": round(user.balance),
-                            "Пакет": user.packet_name,
-                            "Коментарій": user.comment,
-                            "Номер телефона": user.phone_number,
-                            "Час обновлення телефона": datetime.fromtimestamp(
-                                user.phone_number_time
-                            ),
-                            "Сирійний номер ONU": user.sn_onu,
-                            "Час обновлення сирійного номера ONU": datetime.fromtimestamp(
-                                user.sn_onu_time
-                            ),
-                            "MAC адрес": user.mac,
-                            "Час обновлення MAC адреса": datetime.fromtimestamp(
-                                user.mac_time
-                            ),
-                        }
-                    )
-                    for user in users
-                ]
+                worksheet.write(row, 10, user.sn_onu)
+                worksheet.write(
+                    row,
+                    11,
+                    datetime.fromtimestamp(user.sn_onu_time).strftime("%Y-%m-%d %H:%M"),
+                )
+                worksheet.write(row, 12, user.mac)
+                worksheet.write(
+                    row,
+                    13,
+                    datetime.fromtimestamp(user.mac_time).strftime("%Y-%m-%d %H:%M"),
+                )
+                row += 1
+        worksheet.autofit()
+        workbook.close()
         return self.user_notify_file
 
     async def retrieve(self, username: str) -> User:

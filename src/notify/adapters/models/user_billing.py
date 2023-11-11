@@ -4,6 +4,7 @@ import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
 from pydantic import BaseModel, Field, model_validator
 
+from src.notify.adapters.models.base import NaNToEmptyStr
 from src.notify.adapters.models.message import MessageStatus
 
 
@@ -52,7 +53,7 @@ class BillingPacket(BaseModel):
 
 class UserBillingMessageData(BaseModel):
     id: Annotated[int, Field(alias="Абонент ID")]
-    phone_number: Annotated[str, Field(alias="Номер телефона")]
+    phone_number: Annotated[NaNToEmptyStr, Field(alias="Номер телефона")]
     status: MessageStatus | None = None
 
     @model_validator(mode="after")

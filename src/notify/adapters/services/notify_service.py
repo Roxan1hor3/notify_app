@@ -1,15 +1,14 @@
-import csv
 import logging
-from csv import DictReader
 from datetime import datetime
-from io import StringIO
 from os import path
 from uuid import UUID
 
 import magic
+import xlsxwriter
 from aiomysql import Pool
 from fastapi import UploadFile
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pandas import DataFrame, ExcelWriter, notnull, read_excel
 from pydantic import ValidationError
 
 from src.notify.adapters.models.message import Message, MessageStatus
@@ -30,15 +29,9 @@ logger = logging.getLogger(__name__)
 
 
 class NotifyService(BaseService):
-    CSVMediaType = [
-        "text/plain",
-        "text/x-csv",
-        "application/csv",
-        "application/x-csv",
-        "text/csv",
-        "text/comma-separated-values",
-        "text/x-comma-separated-values",
-        "text/tab-separated-values",
+    EXCELMediaType = [
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ]
     USER_NOTIFY_REPORT_FILE_FIELDS = (
         "Абонент ID",
@@ -65,7 +58,7 @@ class NotifyService(BaseService):
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
         self.user_notify_report = path.join(
-            self.static_dir_path, "user_notify_report.csv"
+            self.static_dir_path, "user_notify_report.xlsx"
         )
 
     @classmethod
@@ -103,83 +96,92 @@ class NotifyService(BaseService):
         await update_file.seek(0)
         content_type = lm.from_buffer(await update_file.read(2048))
         await update_file.seek(0)
-        if content_type not in self.CSVMediaType:
+        if content_type not in self.EXCELMediaType:
             raise ServiceError(
-                message=f"File must be in csv format. Yor format is {content_type}."
+                message=f"File must be in excel format. Yor format is {content_type}."
             )
 
-    async def _get_csv_reader_from_update_file(
+    async def _get_excel_data_df_from_update_file(
         self, update_file: UploadFile
-    ) -> DictReader:
+    ) -> DataFrame:
         await self.validate_update_file(update_file)
-        return csv.DictReader(StringIO((await update_file.read()).decode("utf-8")))
+        return read_excel(await update_file.read())
 
     async def send_sms_by_file(
         self, sms_file: UploadFile, message_text: str, user_uuid, username
     ) -> str:
-        csv_reader = await self._get_csv_reader_from_update_file(update_file=sms_file)
-        if csv_reader.fieldnames is None:
+        excel_data_df = await self._get_excel_data_df_from_update_file(
+            update_file=sms_file
+        )
+        excel_data_df.where(notnull(excel_data_df), None)
+        if not excel_data_df.columns.tolist():
             raise ServiceError(message="File must contain id and phone_number columns.")
+        data_dict = excel_data_df.to_dict("records")
         repeated_phone_numbers = []
-        with open(self.user_notify_report, mode="w") as csvfile:
-            writer = csv.DictWriter(
-                csvfile,
-                fieldnames=[*csv_reader.fieldnames, "Статус відправки"],
-            )
-            writer.writeheader()
-            user_billing_messages_data = []
-            for row in csv_reader:
-                try:
-                    message = UserBillingMessageData(**row)
-                except ValidationError:
-                    raise ServiceError(
-                        message="File must contain id and phone_number columns."
-                    )
-                if message.phone_number in repeated_phone_numbers:
-                    message.status = MessageStatus.PHONE_NUMBER_IS_REPEATED
-                repeated_phone_numbers.append(message.phone_number)
-
-                user_billing_messages_data.append(message)
-                writer.writerow({**row, "Статус відправки": message.status})
+        user_billing_messages_data = []
+        report_data = []
+        for row in data_dict:
             try:
-                async with self.notify_repo.start_transaction() as session:
-                    notify = await self.notify_repo.save_notify(
-                        notify=Notify(
-                            message=message_text,
-                            user_uuid=user_uuid,
-                            username=username,
-                        ),
-                        session=session,
-                    )
-                    messages = await self.message_repo.bulk_save_messages(
-                        messages=[
-                            Message(
-                                user_id=mes.id,
-                                phone_number=mes.phone_number,
-                                notify_uuid=notify.uuid,
-                                status=mes.status,
-                            )
-                            for mes in user_billing_messages_data
-                        ],
-                        session=session,
-                    )
-                    res = await self.turbo_sms_repo.send_billing_user_sms(
-                        phonenumbers=[
-                            message.phone_number
-                            for message in messages
-                            if message.status == MessageStatus.SANDED
-                        ],
-                        text=message_text,
-                    )
-                    if res is not True:
-                        raise ServiceError(
-                            message="Unexpected Error. Please try again."
+                message = UserBillingMessageData(**row)
+            except ValidationError:
+                raise ServiceError(
+                    message="File must contain id and phone_number columns."
+                )
+            if message.phone_number in repeated_phone_numbers:
+                message.status = MessageStatus.PHONE_NUMBER_IS_REPEATED
+            repeated_phone_numbers.append(message.phone_number)
+
+            user_billing_messages_data.append(message)
+            report_data.append({**row, "Статус відправки": message.status})
+        try:
+            async with self.notify_repo.start_transaction() as session:
+                notify = await self.notify_repo.save_notify(
+                    notify=Notify(
+                        message=message_text,
+                        user_uuid=user_uuid,
+                        username=username,
+                    ),
+                    session=session,
+                )
+                messages = await self.message_repo.bulk_save_messages(
+                    messages=[
+                        Message(
+                            user_id=mes.id,
+                            phone_number=mes.phone_number,
+                            notify_uuid=notify.uuid,
+                            status=mes.status,
                         )
-            except Exception as e:
-                logger.error("Unexpected Error.")
-                logger.error(str(e))
-                raise ServiceError(message="Unexpected Error. Please try again.")
+                        for mes in user_billing_messages_data
+                    ],
+                    session=session,
+                )
+                res = await self.turbo_sms_repo.send_billing_user_sms(
+                    phonenumbers=[
+                        message.phone_number
+                        for message in messages
+                        if message.status == MessageStatus.SANDED
+                    ],
+                    text=message_text,
+                )
+                if res is not True:
+                    raise ServiceError(message="Unexpected Error. Please try again.")
+        except Exception as e:
+            logger.error("Unexpected Error.")
+            logger.error(str(e))
+            raise ServiceError(message="Unexpected Error. Please try again.")
         await sms_file.close()
+        df = DataFrame.from_records(data=report_data)
+        writer = ExcelWriter(self.user_notify_report, engine="xlsxwriter")
+        df.to_excel(
+            writer,
+            index=False,
+            na_rep="N/A",
+            header=[*excel_data_df.columns.tolist(), "Статус відправки"],
+            index_label="ID",
+        )
+        worksheet = writer.sheets["Sheet1"]
+        worksheet.autofit()
+        writer.close()
         return self.user_notify_report
 
     async def get_current_turbo_sms_balance(self):
@@ -199,47 +201,61 @@ class NotifyService(BaseService):
         limit = 1000
         messages = await self.message_repo.get_list(notify_uuid=notify_uuid)
         user_id_message_map = {message.user_id: message for message in messages}
-        with open(self.user_notify_report, mode="w") as csvfile:
-            writer = csv.DictWriter(
-                csvfile,
-                fieldnames=[*self.USER_NOTIFY_REPORT_FILE_FIELDS, "Статус відправки"],
+        workbook = xlsxwriter.Workbook(self.user_notify_report)
+        worksheet = workbook.add_worksheet()
+        headers = [*self.USER_NOTIFY_REPORT_FILE_FIELDS, "Статус відправки"]
+        for col_num, header in enumerate(headers):
+            worksheet.write(0, col_num, header)
+
+        _filter = UserBillingFilter(_ids=user_id_message_map.values())
+        count = await self.users_billing_repo.get_users_count(_filter=_filter)
+        row = 1
+        for offset in range(0, count, limit):
+            users = await self.users_billing_repo.get_list(
+                _filter=_filter, offset=offset, limit=limit
             )
-            _filter = UserBillingFilter(_ids=user_id_message_map.values())
-            count = await self.users_billing_repo.get_users_count(_filter=_filter)
-            for offset in range(0, count, limit):
-                users = await self.users_billing_repo.get_list(
-                    _filter=_filter, offset=offset, limit=limit
+            for user in users:
+                worksheet.write(row, 0, user.id)
+                worksheet.write(row, 1, user.grp_name)
+                worksheet.write(row, 2, user.ip)
+                worksheet.write(row, 3, user.fio)
+                worksheet.write(row, 4, user.fee)
+                worksheet.write(row, 5, round(user.balance))
+                worksheet.write(row, 6, user.packet_name)
+                worksheet.write(row, 7, user.comment)
+                phone_number = (
+                    user_id_message_map[user.id].phone_number
+                    if user_id_message_map.get(user.id) is not None
+                    else ""
                 )
-                [
-                    writer.writerow(
-                        {
-                            "Абонент ID": user.id,
-                            "Група": user.grp_id,
-                            "IP": user.ip,
-                            "Абонент": user.fio,
-                            "Абоненська плата": user.fee,
-                            "Баланс": round(user.balance),
-                            "Пакет": user.packet_name,
-                            "Коментарій": user.comment,
-                            "Номер телефона": user_id_message_map[user.id].phone_number
-                            if user_id_message_map.get(user.id) is not None
-                            else "",
-                            "Час обновлення телефона": datetime.fromtimestamp(
-                                user.phone_number_time
-                            ),
-                            "Сирійний номер ONU": user.sn_onu,
-                            "Час обновлення сирійного номера ONU": datetime.fromtimestamp(
-                                user.sn_onu_time
-                            ),
-                            "MAC адрес": user.mac,
-                            "Час обновлення MAC адреса": datetime.fromtimestamp(
-                                user.mac_time
-                            ),
-                            "Статус відправки": user_id_message_map[user.id].status
-                            if user_id_message_map.get(user.id) is not None
-                            else "",
-                        }
-                    )
-                    for user in users
-                ]
+                worksheet.write(row, 8, phone_number)
+                worksheet.write(
+                    row,
+                    9,
+                    datetime.fromtimestamp(user.phone_number_time).strftime(
+                        "%Y-%m-%d %H:%M"
+                    ),
+                )
+                worksheet.write(row, 10, user.sn_onu)
+                worksheet.write(
+                    row,
+                    11,
+                    datetime.fromtimestamp(user.sn_onu_time).strftime("%Y-%m-%d %H:%M"),
+                )
+                worksheet.write(row, 12, user.mac)
+                worksheet.write(
+                    row,
+                    13,
+                    datetime.fromtimestamp(user.mac_time).strftime("%Y-%m-%d %H:%M"),
+                )
+                status = (
+                    user_id_message_map[user.id].status
+                    if user_id_message_map.get(user.id) is not None
+                    else ""
+                )
+                worksheet.write(row, 14, status)
+
+                row += 1
+        worksheet.autofit()
+        workbook.close()
         return self.user_notify_report
