@@ -39,6 +39,7 @@ class UserBillingFilter(BaseModel):
     is_auth: bool | None = None
     is_discount: bool | None = None
 
+
 class BillingGroup(BaseModel):
     grp_name: str
     grp_id: int
@@ -52,7 +53,6 @@ class BillingPacket(BaseModel):
 class UserBillingMessageData(BaseModel):
     id: Annotated[int, Field(alias="Абонент ID")]
     phone_number: Annotated[str, Field(alias="Номер телефона")]
-    status: MessageStatus | None = None
 
     @model_validator(mode="after")
     def pre_save(self):
