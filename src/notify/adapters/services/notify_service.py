@@ -125,7 +125,6 @@ class NotifyService(BaseService):
             writer = csv.DictWriter(
                 csvfile,
                 fieldnames=[*csv_reader.fieldnames, "Статус відправки"],
-                delimiter=";",
             )
             writer.writeheader()
             user_billing_messages_data = []

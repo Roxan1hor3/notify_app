@@ -53,6 +53,7 @@ class BillingPacket(BaseModel):
 class UserBillingMessageData(BaseModel):
     id: Annotated[int, Field(alias="Абонент ID")]
     phone_number: Annotated[str, Field(alias="Номер телефона")]
+    status: MessageStatus | None = None
 
     @model_validator(mode="after")
     def pre_save(self):
