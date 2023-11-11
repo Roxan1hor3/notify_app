@@ -41,6 +41,10 @@ class UserBillingQueryStorage:
             )
         if _filter.fee_more_than_balance is not None:
             _filters.append((self.us_trf.submoney >= self.us.balance))
+        if _filter.is_discount is True:
+            _filters.append((self.us.discount != 0))
+        elif _filter.is_discount is False:
+            _filters.append((self.us.discount == 0))
         return _filters
 
     def get_subquery_sn_onu(self, _filter: UserBillingFilter) -> QueryBuilder:

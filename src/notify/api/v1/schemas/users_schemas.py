@@ -35,6 +35,7 @@ class QueryUserNotifySchema(BaseModel):
     sn_onu_equipment_delivered: bool | None = None
     fio: str | None = None
     is_auth: bool | None = None
+    is_discount: bool | None = None
 
 
 class BillingFiltersResponseSchema(BaseModel):
