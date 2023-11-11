@@ -123,7 +123,9 @@ class NotifyService(BaseService):
         repeated_phone_numbers = []
         with open(self.user_notify_report, mode="w") as csvfile:
             writer = csv.DictWriter(
-                csvfile, fieldnames=[*csv_reader.fieldnames, "Статус відправки"], delimiter=";"
+                csvfile,
+                fieldnames=[*csv_reader.fieldnames, "Статус відправки"],
+                delimiter=";",
             )
             writer.writeheader()
             user_billing_messages_data = []
@@ -220,7 +222,9 @@ class NotifyService(BaseService):
                             "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
-                            "Номер телефона": user_id_message_map[user.id].phone_number,
+                            "Номер телефона": user_id_message_map[user.id].phone_numbe
+                            if user_id_message_map.get(user.id) is not None
+                            else "",
                             "Час обновлення телефона": datetime.fromtimestamp(
                                 user.phone_number_time
                             ),
@@ -232,7 +236,9 @@ class NotifyService(BaseService):
                             "Час обновлення MAC адреса": datetime.fromtimestamp(
                                 user.mac_time
                             ),
-                            "Статус відправки": user_id_message_map[user.id].status,
+                            "Статус відправки": user_id_message_map[user.id].status
+                            if user_id_message_map.get(user.id) is not None
+                            else "",
                         }
                     )
                     for user in users
