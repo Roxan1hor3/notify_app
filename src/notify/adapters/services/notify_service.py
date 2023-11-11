@@ -222,7 +222,7 @@ class NotifyService(BaseService):
                             "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
-                            "Номер телефона": user_id_message_map[user.id].phone_numbe
+                            "Номер телефона": user_id_message_map[user.id].phone_number
                             if user_id_message_map.get(user.id) is not None
                             else "",
                             "Час обновлення телефона": datetime.fromtimestamp(
