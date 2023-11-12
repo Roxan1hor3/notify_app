@@ -16,18 +16,20 @@ class UsersBillingRepo(BaseAioMySqlRepo):
         self, _filter: UserBillingFilter, limit: int, offset: int
     ) -> list[UserBilling]:
         async with self.get_cursor() as cur:
-            await cur.execute(
-                self.query_storage.get_users(
+            sql = self.query_storage.get_users(
                     _filter=_filter, limit=limit, offset=offset
                 ).get_sql()
+            await cur.execute(
+                sql + ";" if sql[-1] != ";" else sql
             )
             results = await cur.fetchall()
             return [self.MODEL(**res) for res in results]
 
     async def get_users_count(self, _filter: UserBillingFilter):
         async with self.get_cursor() as cur:
+            sql = self.query_storage.get_users_count(_filter=_filter).get_sql()
             await cur.execute(
-                self.query_storage.get_users_count(_filter=_filter).get_sql()
+                sql + ";" if sql[-1] != ";" else sql
             )
             result = await cur.fetchall()
             return result[0]["count"]
