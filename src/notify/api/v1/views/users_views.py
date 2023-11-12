@@ -48,7 +48,7 @@ async def get_user_list(
     return FileResponse(
         user_notify_file,
         filename="user_notify.xlsx",
-        media_type="application/vnd.ms-excel",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
@@ -96,7 +96,7 @@ async def get_user_list(
     return FileResponse(
         notify_report_file,
         filename=f"notify_report_file.xlsx",
-        media_type="application/vnd.ms-excel",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
@@ -127,7 +127,7 @@ async def get_notify_list(
     return FileResponse(
         notify_report,
         filename=f"notify_report_file.xlsx",
-        media_type="application/vnd.ms-excel",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
