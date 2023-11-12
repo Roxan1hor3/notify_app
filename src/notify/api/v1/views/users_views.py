@@ -47,7 +47,7 @@ async def get_user_list(
     )
     return FileResponse(
         user_notify_file,
-        filename="new_users.xlsx",
+        filename="user_notify.xlsx",
         media_type="application/vnd.ms-excel",
     )
 
