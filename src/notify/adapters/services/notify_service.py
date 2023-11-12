@@ -214,8 +214,7 @@ class NotifyService(BaseService):
         headers = [*self.USER_NOTIFY_REPORT_FILE_FIELDS, "Статус відправки"]
         for col_num, header in enumerate(headers):
             worksheet.write(0, col_num, header)
-
-        _filter = UserBillingFilter(_ids=user_id_message_map.values())
+        _filter = UserBillingFilter(ids=list(user_id_message_map.keys()))
         count = await self.users_billing_repo.get_users_count(_filter=_filter)
         row = 1
         for offset in range(0, count, limit):

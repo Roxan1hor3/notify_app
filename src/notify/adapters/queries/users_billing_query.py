@@ -15,7 +15,7 @@ class UserBillingQueryStorage:
 
     def _filter(self, _filter: UserBillingFilter) -> list[bool | Any]:
         _filters = []
-        if _filter.ids is False:
+        if _filter.ids is not None:
             _filters.append((self.us.id.isin(_filter.ids)))
         if _filter.fio is not None:
             _filters.append((self.us.fio.like(f"{_filter.fio}%")))
