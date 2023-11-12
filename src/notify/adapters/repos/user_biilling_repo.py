@@ -28,6 +28,8 @@ class UsersBillingRepo(BaseAioMySqlRepo):
     async def get_users_count(self, _filter: UserBillingFilter):
         async with self.get_cursor() as cur:
             sql = self.query_storage.get_users_count(_filter=_filter).get_sql()
+            print(sql)
+            print(sql + ";" if sql[-1] != ";" else sql)
             await cur.execute(
                 sql + ";" if sql[-1] != ";" else sql
             )

@@ -54,7 +54,7 @@ class UserBillingQueryStorage:
                 self.dv.parent_id,
                 functions.Max(self.dv.time).as_("max_time"),
             )
-            .where((self.dv.dopfield_id == 33))
+            .where(self.dv.dopfield_id == 33)
             .groupby(self.dv.parent_id)
         )
         query = (
@@ -69,7 +69,7 @@ class UserBillingQueryStorage:
                 (self.dv.time == subquery.max_time)
                 & (self.dv.parent_id == subquery.parent_id)
             )
-            .where((self.dv.dopfield_id == 33))
+            .where(self.dv.dopfield_id == 33)
         )
         if _filter.sn_onu_equipment_delivered is True:
             query = query.where((self.dv.field_value == ""))
@@ -84,7 +84,7 @@ class UserBillingQueryStorage:
                 self.dv.parent_id,
                 functions.Max(self.dv.time).as_("max_time"),
             )
-            .where((self.dv.dopfield_id == 8))
+            .where(self.dv.dopfield_id == 8)
             .groupby(self.dv.parent_id)
         )
         return (
@@ -99,7 +99,7 @@ class UserBillingQueryStorage:
                 (self.dv.time == subquery.max_time)
                 & (self.dv.parent_id == subquery.parent_id)
             )
-            .where((self.dv.dopfield_id == 8))
+            .where(self.dv.dopfield_id == 8)
         )
 
     def get_users_count(self, _filter: UserBillingFilter):
