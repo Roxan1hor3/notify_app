@@ -170,15 +170,23 @@ class NotifyService(BaseService):
             logger.error(str(e))
             raise ServiceError(message="Unexpected Error. Please try again.")
         await sms_file.close()
-        df = DataFrame.from_records(data=report_data)
         writer = ExcelWriter(self.user_notify_report, engine="xlsxwriter")
-        df.to_excel(
-            writer,
-            index=False,
-            na_rep="N/A",
-            header=[*excel_data_df.columns.tolist(), "Статус відправки"],
-            index_label="ID",
-        )
+        if report_data:
+            df = DataFrame.from_records(data=report_data)
+            df.to_excel(
+                writer,
+                index=False,
+                header=[*excel_data_df.columns.tolist(), "Статус відправки"],
+                index_label="ID",
+            )
+        else:
+            df = DataFrame(columns=[*excel_data_df.columns.tolist(), "Статус відправки"])
+            df.to_excel(
+                writer,
+                index=False,
+                index_label=False,
+                header=True,
+            )
         worksheet = writer.sheets["Sheet1"]
         worksheet.autofit()
         writer.close()

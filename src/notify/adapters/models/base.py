@@ -48,7 +48,7 @@ class BaseEntityModel(ABC, BaseModel):
 def nan_to_str(value: NaN, validator: ValidatorFunctionWrapHandler) -> str | None:
     if value is NaN:
         return ""
-    value = validator(value)
+    value = validator(str(value))
     return value
 
 
