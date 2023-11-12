@@ -32,7 +32,6 @@ class NotifyService(BaseService):
     EXCELMediaType = [
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/zip",
     ]
     USER_NOTIFY_REPORT_FILE_FIELDS = (
         "Абонент ID",
