@@ -53,10 +53,26 @@ class BillingGroup(BaseModel):
     grp_name: str
     grp_id: int
 
+    @field_validator("grp_name", mode="before")
+    def encoding_fio(cls, value):
+        try:
+            decoded_data = value.decode('cp1251')
+        except UnicodeDecodeError:
+            decoded_data = "Coding Error"
+        return decoded_data
+
 
 class BillingPacket(BaseModel):
     name: str
     id: int
+
+    @field_validator("name", mode="before")
+    def encoding_fio(cls, value):
+        try:
+            decoded_data = value.decode('cp1251')
+        except UnicodeDecodeError:
+            decoded_data = "Coding Error"
+        return decoded_data
 
 
 class UserBillingMessageData(BaseModel):
