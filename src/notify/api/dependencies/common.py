@@ -14,7 +14,6 @@ from src.notify.extensions.db import (
 async def get_my_sql_db_conn_pool(
     settings: Settings = Depends(get_settings),
 ) -> AsyncIOMotorDatabase:
-    aiomysql.encoding = 'utf-16'
     return await get_my_sql_db_connection_pool(
         host=settings.MY_SQL_DB_HOST,
         port=settings.MY_SQL_DB_PORT,

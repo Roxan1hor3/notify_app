@@ -10,7 +10,7 @@ async def get_my_sql_db_connection_pool(
     host: str, port: int, user: str, password: str, db: str, loop: AbstractEventLoop
 ) -> Pool:
     pool = await aiomysql.create_pool(
-        host=host, port=port, user=user, password=password, db=db, loop=loop
+        host=host, port=port, user=user, password=password, db=db, loop=loop, charset='latin1'
     )
     return pool
 
