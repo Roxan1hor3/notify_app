@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     MY_SQL_DB_PORT: int
     MY_SQL_DB_PASSWORD: str
     MY_SQL_DB_NAME: str
+    MY_SQL_DB_CHARSET: str
 
     MONGO_DB_URL: str
 
