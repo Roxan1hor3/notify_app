@@ -27,7 +27,7 @@ class UserBilling(BaseModel):
     mac: str
 
     @field_validator("fio", mode="before")
-    def encoding(self, value):
+    def encoding_fio(cls, value):
         try:
             decoded_data = value.decode('utf-8')
         except UnicodeDecodeError:
