@@ -10,7 +10,7 @@ from src.notify.adapters.models.message import MessageStatus
 
 class UserBilling(BaseModel):
     id: int
-    ip: str
+    # ip: str
     fio: str
     fee: float
     comment: str
