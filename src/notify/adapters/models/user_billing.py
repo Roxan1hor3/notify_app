@@ -29,7 +29,7 @@ class UserBilling(BaseModel):
     @field_validator("fio", "packet_name", "comment", "grp_name", "phone_number", mode="before")
     def encoding_fio(cls, value):
         try:
-            decoded_data = value.decode('utf-8')
+            decoded_data = value.decode('cp1251')
         except UnicodeDecodeError:
             decoded_data = "Coding Error"
         return decoded_data
