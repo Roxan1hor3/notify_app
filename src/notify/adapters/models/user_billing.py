@@ -26,7 +26,7 @@ class UserBilling(BaseModel):
     mac_time: int
     mac: str
 
-    @field_validator("fio", mode="before")
+    @field_validator("fio", "packet_name", "comment", "grp_name", mode="before")
     def encoding_fio(cls, value):
         try:
             decoded_data = value.decode('utf-8')
