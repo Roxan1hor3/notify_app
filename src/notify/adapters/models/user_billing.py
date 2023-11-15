@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
@@ -11,7 +11,7 @@ from src.notify.adapters.models.message import MessageStatus
 class UserBilling(BaseModel):
     id: int
     ip: str
-    fio: str
+    fio: Any
     fee: float
     comment: str
     balance: float
