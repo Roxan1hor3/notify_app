@@ -85,7 +85,7 @@ class UserService(BaseService):
             for user in users:
                 worksheet.write(row, 0, user.id)
                 worksheet.write(row, 1, user.grp_name)
-                # worksheet.write(row, 2, user.ip)
+                worksheet.write(row, 2, user.ip)
                 worksheet.write(row, 3, user.fio)
                 worksheet.write(row, 4, user.fee)
                 worksheet.write(row, 5, round(user.balance))

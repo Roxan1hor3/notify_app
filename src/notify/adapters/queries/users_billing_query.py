@@ -134,7 +134,7 @@ class UserBillingQueryStorage:
             MySQLQuery.from_(self.us_trf)
             .select(
                 self.us.id.as_("id"),
-                # self.us.ip,
+                self.us.ip,
                 self.us.passwd,
                 self.us.fio,
                 self.us_trf.submoney.as_("fee"),
