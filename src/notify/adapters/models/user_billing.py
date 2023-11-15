@@ -1,8 +1,9 @@
-from typing import Annotated, Any
+from builtins import UnicodeDecodeError
+from typing import Annotated
 
 import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 
 from src.notify.adapters.models.base import NaNToEmptyStr
 from src.notify.adapters.models.message import MessageStatus
@@ -11,7 +12,7 @@ from src.notify.adapters.models.message import MessageStatus
 class UserBilling(BaseModel):
     id: int
     ip: str
-    fio: Any
+    fio: str
     fee: float
     comment: str
     balance: float
@@ -25,6 +26,13 @@ class UserBilling(BaseModel):
     mac_time: int
     mac: str
 
+    @field_validator("fio", mode="before")
+    def encoding(self, value):
+        try:
+            decoded_data = value.decode('utf-8')
+        except UnicodeDecodeError:
+            decoded_data = "Coding Error"
+        return decoded_data
 
 class UserBillingFilter(BaseModel):
     ids: list[int] | None = None
