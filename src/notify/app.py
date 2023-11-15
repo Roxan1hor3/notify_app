@@ -65,7 +65,7 @@ def register_events(app: FastAPI):
                 password=settings.MY_SQL_DB_PASSWORD,
                 db=settings.MY_SQL_DB_NAME,
                 loop=get_running_loop(),
-                charset=settings.MY_SQL_CHARSET
+                charset=settings.MY_SQL_DB_CHARSET
             ),
             mongo_db_connection=create_mongo_connection(db_url=settings.MONGO_DB_URL),
         )
