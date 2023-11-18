@@ -18,7 +18,7 @@ class UserBillingQueryStorage:
         if _filter.ids:
             _filters.append((self.us.id.isin(_filter.ids)))
         if _filter.fio is not None:
-            _filters.append((self.us.fio.like(f"{_filter.fio}%")))
+            _filters.append((self.us.fio.like(f"%{_filter.fio}%")))
         if _filter.is_auth is False:
             _filters.append((self.us.auth == "no"))
         elif _filter.is_auth is True:
@@ -72,9 +72,9 @@ class UserBillingQueryStorage:
             .where(self.dv.dopfield_id == 33)
         )
         if _filter.sn_onu_equipment_delivered is True:
-            query = query.where((self.dv.field_value == ""))
-        elif _filter.sn_onu_equipment_delivered is False:
             query = query.where((self.dv.field_value != ""))
+        elif _filter.sn_onu_equipment_delivered is False:
+            query = query.where((self.dv.field_value == ""))
         return query
 
     def get_subquery_phone_number(self) -> QueryBuilder:
@@ -194,9 +194,9 @@ class UserBillingQueryStorage:
             .where((self.dv.dopfield_id == 13))
         )
         if _filter.mac_equipment_delivered is True:
-            query = query.where((self.dv.field_value == ""))
-        elif _filter.mac_equipment_delivered is False:
             query = query.where((self.dv.field_value != ""))
+        elif _filter.mac_equipment_delivered is False:
+            query = query.where((self.dv.field_value == ""))
         return query
 
     def get_groups(self):
