@@ -62,8 +62,8 @@ class TurboSMSClient:
         return ok
 
     async def get_current_balance(self) -> float:
-        if self.use_sso is False:
-            return 0
+        # if self.use_sso is False:
+        #     return 0
         try:
             await self.client.service.Auth(login=self.login, password=self.password)
             res = await self.client.service.GetCreditBalance()
