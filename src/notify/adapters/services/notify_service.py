@@ -180,7 +180,9 @@ class NotifyService(BaseService):
                 index_label="ID",
             )
         else:
-            df = DataFrame(columns=[*excel_data_df.columns.tolist(), "Статус відправки"])
+            df = DataFrame(
+                columns=[*excel_data_df.columns.tolist(), "Статус відправки"]
+            )
             df.to_excel(
                 writer,
                 index=False,

@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
+    TELEGRAM_BOT_TOKEN: str
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,6 +1,5 @@
 from asyncio import get_running_loop
 
-import aiomysql
 from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -21,7 +20,7 @@ async def get_my_sql_db_conn_pool(
         password=settings.MY_SQL_DB_PASSWORD,
         db=settings.MY_SQL_DB_NAME,
         loop=get_running_loop(),
-        charset=settings.MY_SQL_DB_CHARSET
+        charset=settings.MY_SQL_DB_CHARSET,
     )
 
 

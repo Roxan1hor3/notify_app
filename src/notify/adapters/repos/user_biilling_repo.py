@@ -3,6 +3,7 @@ from src.notify.adapters.models.user_billing import (
     BillingPacket,
     UserBilling,
     UserBillingFilter,
+    UserBillingForTelegram,
 )
 from src.notify.adapters.queries.users_billing_query import UserBillingQueryStorage
 from src.notify.adapters.repos.base import BaseAioMySqlRepo
@@ -53,3 +54,9 @@ class UsersBillingRepo(BaseAioMySqlRepo):
             results = await cur.fetchall()
             min_balance = results[0]["min_balance"]
             return max_balance, min_balance
+
+    async def retrieve(self, _filter: UserBillingFilter) -> UserBillingForTelegram:
+        async with self.get_cursor() as cur:
+            await cur.execute(self.query_storage.get_user(_filter=_filter).get_sql())
+            result = await cur.fetchall()
+            return UserBillingForTelegram(**result[0])

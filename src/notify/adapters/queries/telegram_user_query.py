@@ -1,0 +1,2 @@
+class TelegramUserQuery:
+    pass

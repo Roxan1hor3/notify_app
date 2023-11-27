@@ -17,6 +17,8 @@ class UserBillingQueryStorage:
         _filters = []
         if _filter.ids:
             _filters.append((self.us.id.isin(_filter.ids)))
+        elif _filter.uid:
+            _filters.append((self.us_trf.uid == _filter.uid))
         if _filter.fio is not None:
             _filters.append((self.us.fio.like(f"%{_filter.fio}%")))
         if _filter.is_auth is False:
@@ -228,5 +230,18 @@ class UserBillingQueryStorage:
             .select((self.us_trf.startmoney - self.us_trf.submoney).as_("min_balance"))
             .limit(1)
             .orderby("min_balance", order=Order.asc)
+        )
+        return query
+
+    def get_user(self, _filter: UserBillingFilter):
+        query = (
+            MySQLQuery.from_(self.us_trf)
+            .select(
+                self.us_trf.uid.as_("id"),
+                self.us_trf.submoney.as_("fee"),
+                self.us_trf.startmoney.as_("balance"),
+            )
+            .limit(1)
+            .where(Criterion.all(self._filter(_filter=_filter)))
         )
         return query

@@ -40,7 +40,7 @@ if __name__ == "__main__":
             password=settings.MY_SQL_DB_PASSWORD,
             db=settings.MY_SQL_DB_NAME,
             loop=loop,
-            charset=settings.MY_SQL_DB_CHARSET
+            charset=settings.MY_SQL_DB_CHARSET,
         )
     )
     mongo_db_connection = create_mongo_connection(db_url=settings.MONGO_DB_URL)

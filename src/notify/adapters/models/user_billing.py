@@ -3,7 +3,7 @@ from typing import Annotated
 
 import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from src.notify.adapters.models.base import NaNToEmptyStr
 from src.notify.adapters.models.message import MessageStatus
@@ -26,15 +26,25 @@ class UserBilling(BaseModel):
     mac_time: int
     mac: str
 
-    @field_validator("fio", "packet_name", "comment", "grp_name", "phone_number", mode="before")
+    @field_validator(
+        "fio", "packet_name", "comment", "grp_name", "phone_number", mode="before"
+    )
     def encoding_fio(cls, value):
         try:
-            decoded_data = value.decode('cp1251')
+            decoded_data = value.decode("cp1251")
         except UnicodeDecodeError:
             decoded_data = "Coding Error"
         return decoded_data
 
+
+class UserBillingForTelegram(BaseModel):
+    id: int
+    fee: float
+    balance: float
+
+
 class UserBillingFilter(BaseModel):
+    uid: int | None = None
     ids: list[int] | None = None
     group_ids: list[int] | None = None
     packet_ids: list[int] | None = None
@@ -56,7 +66,7 @@ class BillingGroup(BaseModel):
     @field_validator("grp_name", mode="before")
     def encoding_fio(cls, value):
         try:
-            decoded_data = value.decode('cp1251')
+            decoded_data = value.decode("cp1251")
         except UnicodeDecodeError:
             decoded_data = "Coding Error"
         return decoded_data
@@ -69,7 +79,7 @@ class BillingPacket(BaseModel):
     @field_validator("name", mode="before")
     def encoding_fio(cls, value):
         try:
-            decoded_data = value.decode('cp1251')
+            decoded_data = value.decode("cp1251")
         except UnicodeDecodeError:
             decoded_data = "Coding Error"
         return decoded_data
