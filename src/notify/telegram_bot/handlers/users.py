@@ -1,7 +1,7 @@
 from typing import Any, Awaitable, Callable
 
 from aiogram import F, Router
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, TelegramObject
 
@@ -40,7 +40,7 @@ async def phone_number_handler(msg: Message, state: FSMContext):
     await state.set_state(UserForm.personal_account_id)
     await msg.answer(
         text=f"Збережений номер телефона: {msg.contact.phone_number}.\n\r"
-        f"Веддіть будь ласка номер особового рахунку.",
+        f"Введіть будь ласка номер особового рахунку.",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -53,7 +53,7 @@ async def personal_account_id_handler(
         personal_account_id=int(msg.text[:-1])
     ):
         await msg.answer(
-            text=f"Такого особового рахунку не знайденно.\n\r" f"Спробуйте ще раз"
+            text=f"Такого особового рахунку не знайденно.\n\r" f"Спробуйте ще раз."
         )
         return
     data = await state.get_data()
@@ -93,14 +93,13 @@ async def start_handler(msg: Message, telegram_service: TelegramService):
         personal_account_id=int(user.personal_account_id[:-1])
     )
     await msg.answer(
-        text=f"Ваша що місячна оплата {billing_user.fee} ГРН.",
+        text=f"Ваша щомісячна оплата {billing_user.fee} ГРН.",
         reply_markup=UserMenu,
     )
 
 
-
 @router.message()
-async def start_handler(msg: Message, telegram_service: TelegramService):
+async def start_handler(msg: Message):
     await msg.answer(
         text=f"Натисніть на якусь кнопку.",
         reply_markup=UserMenu,
