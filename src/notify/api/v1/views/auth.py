@@ -30,7 +30,6 @@ UserService = Annotated[UserService, Depends(get_user_service)]
     status_code=status.HTTP_200_OK,
 )
 async def login(
-    # response: Response,
     user_service: UserService,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     settings: Settings = Depends(get_settings),
@@ -41,13 +40,6 @@ async def login(
         raise invalid_credentials
     if user.password != hashlib.md5(form_data.password.encode()).hexdigest():
         raise invalid_credentials
-    # response.set_cookie(
-    #     key="session_uuid",
-    #     value=b64encode(str(session_uuid).encode("utf-8")).decode("utf-8"),
-    #     httponly=True,
-    #     max_age=int(expire_time.timestamp()),
-    #     domain=get_settings().API_HOST
-    # )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username},

@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
+from itertools import groupby
 from os import path
+from typing import Any
 from uuid import UUID
 
 import magic
@@ -12,13 +14,15 @@ from pandas import DataFrame, ExcelWriter, notnull, read_excel
 from pydantic import ValidationError
 
 from src.notify.adapters.models.message import Message, MessageStatus
-from src.notify.adapters.models.notify import Notify
+from src.notify.adapters.models.notify import Notify, NotifyServices
 from src.notify.adapters.models.user_billing import (
     UserBillingFilter,
     UserBillingMessageData,
 )
 from src.notify.adapters.repos.message_repo import MessageRepo
 from src.notify.adapters.repos.notify_repo import NotifyRepo
+from src.notify.adapters.repos.telegram_notify_repo import TelegramNotifyRepo
+from src.notify.adapters.repos.telegram_user_repo import TelegramUsersRepo
 from src.notify.adapters.repos.turbo_sms_repo import TurboSMSRepo
 from src.notify.adapters.repos.user_biilling_repo import UsersBillingRepo
 from src.notify.adapters.services.base import BaseService, ServiceError
@@ -54,6 +58,8 @@ class NotifyService(BaseService):
     notify_repo: NotifyRepo
     message_repo: MessageRepo
     users_billing_repo: UsersBillingRepo
+    telegram_users_repo: TelegramUsersRepo
+    telegram_notify_repo: TelegramNotifyRepo
 
     def __init__(self, static_dir_path):
         self.static_dir_path = static_dir_path
@@ -70,6 +76,7 @@ class NotifyService(BaseService):
         turbo_sms_config: TurboSMSConfig,
         sender: str,
         use_sso: bool,
+        bot_token: str,
     ):
         self = cls(static_dir_path=static_dir_path)
 
@@ -84,6 +91,12 @@ class NotifyService(BaseService):
         )
         self.users_billing_repo = await UsersBillingRepo.create_repo(
             my_sql_connection_pool
+        )
+        self.telegram_users_repo = await TelegramUsersRepo.create_repo(
+            mongo_db_connection
+        )
+        self.telegram_notify_repo = TelegramNotifyRepo(
+            use_sso=use_sso, bot_token=bot_token
         )
 
         return self
@@ -140,6 +153,7 @@ class NotifyService(BaseService):
                         message=message_text,
                         user_uuid=user_uuid,
                         username=username,
+                        sent_by=NotifyServices.SMS,
                     ),
                     session=session,
                 )
@@ -170,6 +184,12 @@ class NotifyService(BaseService):
             logger.error(str(e))
             raise ServiceError(message="Unexpected Error. Please try again.")
         await sms_file.close()
+        self.create_notify_report_file(report_data, excel_data_df=excel_data_df)
+        return self.user_notify_report
+
+    def create_notify_report_file(
+        self, report_data: list[dict[str, Any]], excel_data_df
+    ) -> None:
         writer = ExcelWriter(self.user_notify_report, engine="xlsxwriter")
         if report_data:
             df = DataFrame.from_records(data=report_data)
@@ -192,6 +212,85 @@ class NotifyService(BaseService):
         worksheet = writer.sheets["Sheet1"]
         worksheet.autofit()
         writer.close()
+
+    async def send_telegram_notify_by_file(
+        self, telegram_notify_file: UploadFile, message_text: str, user_uuid, username
+    ):
+        excel_data_df = await self._get_excel_data_df_from_update_file(
+            update_file=telegram_notify_file
+        )
+        excel_data_df.where(notnull(excel_data_df), None)
+        if not excel_data_df.columns.tolist():
+            raise ServiceError(message="File must contain id and phone_number columns.")
+        data_dict = excel_data_df.to_dict("records")
+        user_billing_messages_data = []
+        valid_phone_numbers = []
+        user_billing_ids = []
+        for row in data_dict:
+            try:
+                message = UserBillingMessageData(**row)
+            except ValidationError:
+                raise ServiceError(
+                    message="File must contain id and phone_number columns."
+                )
+            user_billing_messages_data.append(message)
+            valid_phone_numbers.append(
+                message.phone_number
+                if message.phone_number.startswith("+380")
+                else "+380" + message.phone_number
+            )
+            user_billing_ids.append(message.id)
+        telegram_users = await self.telegram_users_repo.get_list(
+            phone_numbers=valid_phone_numbers, billing_ids=user_billing_ids
+        )
+        map_billing_id_to_chat_id = {user.billing_id: user.chat_id for user in telegram_users}
+        try:
+            async with self.notify_repo.start_transaction() as session:
+                notify = await self.notify_repo.save_notify(
+                    notify=Notify(
+                        message=message_text,
+                        user_uuid=user_uuid,
+                        username=username,
+                        sent_by=NotifyServices.TELEGRAM,
+                    ),
+                    session=session,
+                )
+                messages = await self.message_repo.bulk_save_messages(
+                    messages=[
+                        Message(
+                            user_id=mes.id,
+                            phone_number=mes.phone_number,
+                            notify_uuid=notify.uuid,
+                            telegram_chat_id=map_billing_id_to_chat_id[mes.id],
+                            status=MessageStatus.SANDED if mes.id in map_billing_id_to_chat_id.keys() else MessageStatus.NOT_REGISTERED_TELEGRAM,
+                        )
+                        for mes in user_billing_messages_data
+                    ],
+                    session=session,
+                )
+                res = await self.telegram_notify_repo.send_telegram_users_messages(
+                    chat_ids=[
+                        message.telegram_chat_id
+                        for message in messages
+                        if message.status == MessageStatus.SANDED and message.telegram_chat_id is not None
+                    ],
+                    text=message_text,
+                )
+                if res is not True:
+                    raise ServiceError(message="Unexpected Error. Please try again.")
+        except Exception as e:
+            logger.error("Unexpected Error.")
+            logger.error(str(e))
+            raise ServiceError(message="Unexpected Error. Please try again.")
+        report_data = []
+        for row in data_dict:
+            if row.get("id") in map_billing_id_to_chat_id.keys():
+                report_data.append({**row, "Статус відправки": MessageStatus.SANDED})
+            else:
+                report_data.append(
+                    {**row, "Статус відправки": MessageStatus.NOT_REGISTERED_TELEGRAM}
+                )
+        self.create_notify_report_file(report_data, excel_data_df=excel_data_df)
         return self.user_notify_report
 
     async def get_current_turbo_sms_balance(self):

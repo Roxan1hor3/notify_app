@@ -13,7 +13,8 @@ class TelegramUser(BaseModel):
     first_name: str
     last_name: str | None
     username: str | None
-    personal_account_id: str | None = None
+    personal_account_id: int | None = None
+    billing_id: int | None = None
     phone_number: str | None = None
     created_at: Annotated[datetime, Field(default_factory=_default_datetime)]
     updated_at: Annotated[datetime, Field(default_factory=_default_datetime)]

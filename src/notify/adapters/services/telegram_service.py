@@ -46,6 +46,7 @@ class TelegramService(BaseService):
         username: str,
         personal_account_id: int | None = None,
         phone_number: str | None = None,
+        billing_id: int | None = None,
     ) -> TelegramUser:
         return await self.telegram_users_repo.save_user(
             TelegramUser(
@@ -55,15 +56,16 @@ class TelegramService(BaseService):
                 username=username,
                 personal_account_id=personal_account_id,
                 phone_number=phone_number,
+                billing_id=billing_id,
             )
         )
 
-    async def retrieve_by_personal_account_id(
-        self, personal_account_id: int
+    async def retrieve_by_user_billing_id(
+        self, billing_id: int
     ) -> None | UserBillingForTelegram:
         try:
             user = await self.users_billing_repo.retrieve(
-                _filter=UserBillingFilter(uid=personal_account_id)
+                _filter=UserBillingFilter(uid=billing_id)
             )
         except Exception:
             return None

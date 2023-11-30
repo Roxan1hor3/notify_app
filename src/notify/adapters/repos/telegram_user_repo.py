@@ -23,3 +23,16 @@ class TelegramUsersRepo(BaseMotorRepo):
     async def retrieve(self, chat_id: int) -> TelegramUser:
         user = await self.collection.find_one({"chat_id": chat_id})
         return TelegramUser(**user)
+
+    async def get_list(
+        self, phone_numbers: list[str], billing_ids: list[int]
+    ) -> list[TelegramUser]:
+        results = await self.collection.find(
+            {
+                "$or": [
+                    {"billing_id": {"$in": billing_ids}},
+                    {"phone_number": {"$in": phone_numbers}},
+                ]
+            }
+        ).to_list(length=None)
+        return [TelegramUser(**user) for user in results]

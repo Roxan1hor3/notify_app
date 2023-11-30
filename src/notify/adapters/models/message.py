@@ -21,13 +21,15 @@ class MessageStatus(StrEnum):
     NOT_VALID_PHONE_NUMBER = "Не валідний номер телефона"
     PHONE_NUMBER_IS_REPEATED = "Номер телефона дуплікований"
     UNEXPECTED_ERROR = "Не відома помилка повторіть відправку"
+    NOT_REGISTERED_TELEGRAM = "Абонент не підписаний на телеграм бота"
 
 
 class Message(BaseEntityModel):
     uuid: Annotated[UUID, Field(default_factory=_default_uuid)]
     notify_uuid: UUID
     user_id: int
-    phone_number: str
+    phone_number: str | None = None
+    telegram_chat_id: int | None = None
     created_at: Annotated[datetime, Field(default_factory=_default_datetime)]
     status: MessageStatus
 

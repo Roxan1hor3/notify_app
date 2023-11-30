@@ -49,8 +49,11 @@ async def phone_number_handler(msg: Message, state: FSMContext):
 async def personal_account_id_handler(
     msg: Message, telegram_service: TelegramService, state: FSMContext
 ):
-    if not await telegram_service.retrieve_by_personal_account_id(
-        personal_account_id=int(msg.text[:-1])
+    if not msg.text.isdigit():
+        await msg.answer(text=f"Введіть будь-ласка номер.\n\r" f"Наприклад 99999.")
+        return
+    if not await telegram_service.retrieve_by_user_billing_id(
+        billing_id=int(msg.text[:-1])
     ):
         await msg.answer(
             text=f"Такого особового рахунку не знайденно.\n\r" f"Спробуйте ще раз."
@@ -63,7 +66,8 @@ async def personal_account_id_handler(
         last_name=msg.from_user.last_name,
         username=msg.from_user.username,
         phone_number=data["phone_number"],
-        personal_account_id=msg.text,
+        personal_account_id=int(msg.text),
+        billing_id=int(msg.text[:-1]),
     )
     await state.clear()
     await msg.answer(
@@ -77,8 +81,8 @@ async def personal_account_id_handler(
 @router.message(F.text == "Баланс")
 async def start_handler(msg: Message, telegram_service: TelegramService):
     user = await telegram_service.get_user(chat_id=msg.chat.id)
-    billing_user = await telegram_service.retrieve_by_personal_account_id(
-        personal_account_id=int(user.personal_account_id[:-1])
+    billing_user = await telegram_service.retrieve_by_user_billing_id(
+        billing_id=user.billing_id
     )
     await msg.answer(
         text=f"Ваш баланс {billing_user.balance} ГРН.",
@@ -89,8 +93,8 @@ async def start_handler(msg: Message, telegram_service: TelegramService):
 @router.message(F.text == "Місячна оплата")
 async def start_handler(msg: Message, telegram_service: TelegramService):
     user = await telegram_service.get_user(chat_id=msg.chat.id)
-    billing_user = await telegram_service.retrieve_by_personal_account_id(
-        personal_account_id=int(user.personal_account_id[:-1])
+    billing_user = await telegram_service.retrieve_by_user_billing_id(
+        billing_id=user.billing_id
     )
     await msg.answer(
         text=f"Ваша щомісячна оплата {billing_user.fee} ГРН.",

@@ -86,6 +86,7 @@ class ServiceManager:
                 turbo_sms_config=settings.TURBO_SMS_CONFIG,
                 sender=settings.SMS_SENDER,
                 use_sso=settings.USE_SSO,
+                bot_token=settings.TELEGRAM_BOT_TOKEN,
             )
         return self._notify_service
 

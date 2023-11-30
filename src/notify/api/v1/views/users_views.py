@@ -100,6 +100,29 @@ async def get_user_list(
     )
 
 
+@notifies_router.post(
+    "/send_telegram_notify_by_file/",
+    status_code=status.HTTP_200_OK,
+)
+async def get_user_list(
+    request: Request,
+    notify_service: NotifyService,
+    message: str,
+    telegram_notify_file: Annotated[UploadFile, File(alias="telegram_notify_file")],
+):
+    notify_report_file = await notify_service.send_telegram_notify_by_file(
+        telegram_notify_file=telegram_notify_file,
+        message_text=message,
+        user_uuid=request.state.user_uuid,
+        username=request.state.username,
+    )
+    return FileResponse(
+        notify_report_file,
+        filename=f"notify_report_file.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 @notifies_router.get(
     "/notify_history/",
     response_model=NotifyListResponseSchema,
