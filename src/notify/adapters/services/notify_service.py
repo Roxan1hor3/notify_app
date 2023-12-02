@@ -213,8 +213,8 @@ class NotifyService(BaseService):
             user_billing_messages_data.append(message)
             valid_phone_numbers.append(
                 message.phone_number
-                if message.phone_number.startswith("+380")
-                else "+380" + message.phone_number
+                if message.phone_number.startswith("+")
+                else "+" + message.phone_number
             )
             user_billing_ids.append(message.id)
         telegram_users = await self.telegram_users_repo.get_list(
@@ -222,6 +222,9 @@ class NotifyService(BaseService):
         )
         map_billing_id_to_chat_id = {
             user.billing_id: user.chat_id for user in telegram_users
+        }
+        map_phone_number_to_chat_id = {
+            user.phone_number.replace("+", ""): user.chat_id for user in telegram_users
         }
         try:
             async with self.notify_repo.start_transaction() as session:
@@ -240,9 +243,11 @@ class NotifyService(BaseService):
                             user_id=mes.id,
                             phone_number=mes.phone_number,
                             notify_uuid=notify.uuid,
-                            telegram_chat_id=map_billing_id_to_chat_id.get(mes.id),
+                            telegram_chat_id=map_billing_id_to_chat_id.get(mes.id)
+                            or map_phone_number_to_chat_id.get(mes.phone_number),
                             status=MessageStatus.SANDED
                             if mes.id in map_billing_id_to_chat_id.keys()
+                            or mes.phone_number in map_phone_number_to_chat_id.keys()
                             else MessageStatus.NOT_REGISTERED_TELEGRAM,
                         )
                         for mes in user_billing_messages_data
@@ -270,7 +275,11 @@ class NotifyService(BaseService):
             )
             writer.writeheader()
             for row in list_csv_reader:
-                if int(row.get("id")) in map_billing_id_to_chat_id.keys():
+                if (
+                    int(row.get("Абонент ID")) in map_billing_id_to_chat_id.keys()
+                    or row.get("Номер телефона").replace("+", "")
+                    in map_phone_number_to_chat_id.keys()
+                ):
                     writer.writerow({**row, "Статус відправки": MessageStatus.SANDED})
                 else:
                     writer.writerow(
@@ -297,7 +306,7 @@ class NotifyService(BaseService):
     async def get_notify_report(self, notify_uuid: UUID) -> str:
         limit = 1000
         messages = await self.message_repo.get_list(notify_uuid=notify_uuid)
-        user_id_message_map = {message.user_id: message for message in messages}
+        user_id_message_map = {int(message.user_id): message for message in messages}
         with open(self.user_notify_report, mode="w") as csvfile:
             writer = csv.DictWriter(
                 csvfile,
@@ -321,7 +330,8 @@ class NotifyService(BaseService):
                             "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
-                            "Номер телефона": user_id_message_map[user.id].phone_number
+                            "Номер телефона": "38"
+                            + user_id_message_map[user.id].phone_number
                             if user_id_message_map.get(user.id) is not None
                             else "",
                             "Час обновлення телефона": datetime.fromtimestamp(

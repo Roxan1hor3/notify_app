@@ -89,7 +89,7 @@ class UserService(BaseService):
                             "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
-                            "Номер телефона": user.phone_number,
+                            "Номер телефона": "38" + user.phone_number,
                             "Час обновлення телефона": datetime.fromtimestamp(
                                 user.phone_number_time
                             ).strftime("%Y-%m-%d %H:%M"),
