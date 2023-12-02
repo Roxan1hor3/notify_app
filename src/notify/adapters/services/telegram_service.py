@@ -32,7 +32,6 @@ class TelegramService(BaseService):
         self.users_billing_repo = await UsersBillingRepo.create_repo(
             my_sql_connection_pool
         )
-        # self.users_repo = await UsersRepo.create_repo(mongo_db_connection)
         self.telegram_users_repo = await TelegramUsersRepo.create_repo(
             mongo_db_connection
         )

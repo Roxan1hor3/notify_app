@@ -30,7 +30,7 @@ NotifyService = Annotated[NotifyService, Depends(get_notify_service)]
 
 @notifies_router.get(
     "/users_file/",
-    response_description="Returns a user notify file 'user_notify.xlsx'",
+    response_description="Returns a user notify file 'user_notify.csv'",
     status_code=status.HTTP_200_OK,
 )
 async def get_user_list(
@@ -47,8 +47,8 @@ async def get_user_list(
     )
     return FileResponse(
         user_notify_file,
-        filename="user_notify.xlsx",
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="user_notify.csv",
+        media_type="text/csv",
     )
 
 
@@ -95,8 +95,8 @@ async def get_user_list(
     )
     return FileResponse(
         notify_report_file,
-        filename=f"notify_report_file.xlsx",
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=f"notify_report_file.csv",
+        media_type="text/csv",
     )
 
 
@@ -118,8 +118,8 @@ async def get_user_list(
     )
     return FileResponse(
         notify_report_file,
-        filename=f"notify_report_file.xlsx",
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=f"notify_report_file.csv",
+        media_type="text/csv",
     )
 
 
@@ -149,8 +149,8 @@ async def get_notify_list(
     notify_report = await notify_service.get_notify_report(notify_uuid=notify_uuid)
     return FileResponse(
         notify_report,
-        filename=f"notify_report_file.xlsx",
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=f"notify_report_file.csv",
+        media_type="text/csv",
     )
 
 
