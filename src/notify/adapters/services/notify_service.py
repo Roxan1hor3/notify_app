@@ -303,6 +303,7 @@ class NotifyService(BaseService):
                 csvfile,
                 fieldnames=[*self.USER_NOTIFY_REPORT_FILE_FIELDS, "Статус відправки"],
             )
+            writer.writeheader()
             _filter = UserBillingFilter(ids=list(user_id_message_map.keys()))
             count = await self.users_billing_repo.get_users_count(_filter=_filter)
             for offset in range(0, count, limit):
