@@ -270,7 +270,7 @@ class NotifyService(BaseService):
             )
             writer.writeheader()
             for row in list_csv_reader:
-                if row.get("id") in map_billing_id_to_chat_id.keys():
+                if int(row.get("id")) in map_billing_id_to_chat_id.keys():
                     writer.writerow({**row, "Статус відправки": MessageStatus.SANDED})
                 else:
                     writer.writerow(
