@@ -239,7 +239,7 @@ class UserBillingQueryStorage:
             .select(
                 self.us_trf.uid.as_("id"),
                 self.us_trf.submoney.as_("fee"),
-                self.us.balance,
+                (self.us.balance - self.us_trf.submoney).as_("balance"),
             )
             .inner_join(self.us)
             .on(self.us_trf.uid == self.us.id)
