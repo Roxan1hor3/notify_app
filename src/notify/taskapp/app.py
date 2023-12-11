@@ -79,6 +79,6 @@ def async_run_task(task) -> Callable[[tuple[Any, ...], dict[str, Any]], None]:
 _app.conf.beat_schedule = {
     "send_billing_messages_in_telegram": {
         "task": "src.notify.taskapp.tasks.telegram_tasks.send_billing_messages_in_telegram",
-        "schedule": crontab(minute="*/1"),
+        "schedule": crontab(minute="*/5"),
     },
 }
