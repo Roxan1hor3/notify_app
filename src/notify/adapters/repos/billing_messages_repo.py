@@ -1,4 +1,3 @@
-
 from src.notify.adapters.models.message_billing import MessageBilling
 from src.notify.adapters.queries.billing_messages_query import (
     MessageBillingQueryStorage,

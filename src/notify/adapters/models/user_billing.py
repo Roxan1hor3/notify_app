@@ -42,6 +42,15 @@ class UserBillingForTelegram(BaseModel):
     fee: float
     balance: float
 
+    @field_validator(
+        "balance",
+        mode="after",
+    )
+    def round_floats(cls, value):
+        if value:
+            return round(value, 2)
+        return value
+
 
 class UserBillingFilter(BaseModel):
     uid: int | None = None
