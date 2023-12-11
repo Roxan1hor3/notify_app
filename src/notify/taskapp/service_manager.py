@@ -1,17 +1,17 @@
-from typing import Annotated
-
-from aiomysql import Connection, Pool
-from fastapi import Depends
+from aiomysql import Pool
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from src.notify.adapters.services.notify_service import NotifyService
 from src.notify.adapters.services.telegram_service import TelegramService
 from src.notify.adapters.services.user_service import UserService
-from src.notify.api.dependencies.common import get_mongo_conn, get_my_sql_db_conn_pool
-from src.notify.config import Settings, get_settings
+from src.notify.config import Settings
 
 
 class ServiceManager:
+    settings: Settings
+    my_sql_connection_pool: Pool
+    mongo_db_connection: AsyncIOMotorDatabase
+
     _user_service: UserService = None
     _notify_service: NotifyService = None
     _telegram_service: TelegramService = None
@@ -22,18 +22,21 @@ class ServiceManager:
         my_sql_connection_pool: Pool,
         mongo_db_connection: AsyncIOMotorDatabase,
     ) -> None:
-        self._user_service = await self.create_user_service(
-            settings=settings,
-            my_sql_connection_pool=my_sql_connection_pool,
-            mongo_db_connection=mongo_db_connection,
+        self.my_sql_connection_pool = my_sql_connection_pool
+        self.mongo_db_connection = mongo_db_connection
+        self.settings = settings
+        self._user_service = await self._create_user_service(
+            my_sql_connection_pool=self.my_sql_connection_pool,
+            mongo_db_connection=self.mongo_db_connection,
+            settings=self.settings,
         )
-        self._notify_service = await self.create_notify_service(
-            settings=settings,
-            my_sql_connection_pool=my_sql_connection_pool,
-            mongo_db_connection=mongo_db_connection,
+        self._notify_service = await self._create_notify_service(
+            my_sql_connection_pool=self.my_sql_connection_pool,
+            mongo_db_connection=self.mongo_db_connection,
+            settings=self.settings,
         )
 
-    async def create_user_service(
+    async def _create_user_service(
         self,
         my_sql_connection_pool: Pool,
         mongo_db_connection: AsyncIOMotorDatabase,
@@ -45,7 +48,31 @@ class ServiceManager:
             )
         return self._user_service
 
-    async def create_notify_service(
+    @property
+    async def user_service(self):
+        return await self._create_user_service(
+            my_sql_connection_pool=self.my_sql_connection_pool,
+            mongo_db_connection=self.mongo_db_connection,
+            settings=self.settings,
+        )
+
+    @property
+    async def notify_service(self):
+        return await self._create_notify_service(
+            my_sql_connection_pool=self.my_sql_connection_pool,
+            mongo_db_connection=self.mongo_db_connection,
+            settings=self.settings,
+        )
+
+    @property
+    async def telegram_service(self):
+        return await self._create_telegram_service(
+            my_sql_connection_pool=self.my_sql_connection_pool,
+            mongo_db_connection=self.mongo_db_connection,
+            settings=self.settings,
+        )
+
+    async def _create_notify_service(
         self,
         my_sql_connection_pool: Pool,
         mongo_db_connection: AsyncIOMotorDatabase,
@@ -64,7 +91,7 @@ class ServiceManager:
             )
         return self._notify_service
 
-    async def create_telegram_service(
+    async def _create_telegram_service(
         self,
         my_sql_connection_pool: Pool,
         mongo_db_connection: AsyncIOMotorDatabase,
@@ -82,52 +109,12 @@ class ServiceManager:
 service_manager = ServiceManager()
 
 
-async def init_service_manager(
+async def init_celery_service_manager(
     settings: Settings,
     my_sql_connection_pool: Pool,
     mongo_db_connection: AsyncIOMotorDatabase,
 ):
     return await service_manager.create(
-        settings=settings,
-        my_sql_connection_pool=my_sql_connection_pool,
-        mongo_db_connection=mongo_db_connection,
-    )
-
-
-MySqlConnectionPool = Annotated[Pool, Depends(get_my_sql_db_conn_pool)]
-MongoConnection = Annotated[Connection, Depends(get_mongo_conn)]
-
-
-async def get_user_service(
-    mongo_db_connection: MongoConnection,
-    my_sql_connection_pool: MySqlConnectionPool,
-    settings: Settings = Depends(get_settings),
-) -> UserService:
-    return await service_manager.create_user_service(
-        settings=settings,
-        my_sql_connection_pool=my_sql_connection_pool,
-        mongo_db_connection=mongo_db_connection,
-    )
-
-
-async def get_notify_service(
-    mongo_db_connection: MongoConnection,
-    my_sql_connection_pool: MySqlConnectionPool,
-    settings: Settings = Depends(get_settings),
-) -> NotifyService:
-    return await service_manager.create_notify_service(
-        settings=settings,
-        my_sql_connection_pool=my_sql_connection_pool,
-        mongo_db_connection=mongo_db_connection,
-    )
-
-
-async def get_telegram_service(
-    mongo_db_connection: MongoConnection,
-    my_sql_connection_pool: MySqlConnectionPool,
-    settings: Settings = Depends(get_settings),
-) -> TelegramService:
-    return await service_manager.create_telegram_service(
         settings=settings,
         my_sql_connection_pool=my_sql_connection_pool,
         mongo_db_connection=mongo_db_connection,

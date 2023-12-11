@@ -1,7 +1,7 @@
 import csv
 import logging
 from csv import DictReader
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import StringIO
 from os import path
 from uuid import UUID
@@ -18,6 +18,7 @@ from src.notify.adapters.models.user_billing import (
     UserBillingFilter,
     UserBillingMessageData,
 )
+from src.notify.adapters.repos.billing_messages_repo import MessagesBillingRepo
 from src.notify.adapters.repos.message_repo import MessageRepo
 from src.notify.adapters.repos.notify_repo import NotifyRepo
 from src.notify.adapters.repos.telegram_notify_repo import TelegramNotifyRepo
@@ -64,6 +65,7 @@ class NotifyService(BaseService):
     message_repo: MessageRepo
     users_billing_repo: UsersBillingRepo
     telegram_users_repo: TelegramUsersRepo
+    messages_billing_repo: MessagesBillingRepo
     telegram_notify_repo: TelegramNotifyRepo
 
     def __init__(self, static_dir_path):
@@ -82,9 +84,12 @@ class NotifyService(BaseService):
         sender: str,
         use_sso: bool,
         bot_token: str,
+        billing_group_chat_id: int,
     ):
         self = cls(static_dir_path=static_dir_path)
-
+        self.messages_billing_repo = await MessagesBillingRepo.create_repo(
+            my_sql_connection_pool
+        )
         self.turbo_sms_repo = TurboSMSRepo(
             turbo_sms_config=turbo_sms_config, sender=sender, use_sso=use_sso
         )
@@ -101,7 +106,9 @@ class NotifyService(BaseService):
             mongo_db_connection
         )
         self.telegram_notify_repo = TelegramNotifyRepo(
-            use_sso=use_sso, bot_token=bot_token
+            use_sso=use_sso,
+            bot_token=bot_token,
+            billing_group_chat_id=billing_group_chat_id,
         )
 
         return self
@@ -211,9 +218,7 @@ class NotifyService(BaseService):
                     message="File must contain id and phone_number columns."
                 )
             user_billing_messages_data.append(message)
-            valid_phone_numbers.append(
-                message.phone_number
-            )
+            valid_phone_numbers.append(message.phone_number)
             user_billing_ids.append(message.id)
         telegram_users = await self.telegram_users_repo.get_list(
             phone_numbers=valid_phone_numbers, billing_ids=user_billing_ids
@@ -352,3 +357,22 @@ class NotifyService(BaseService):
                     for user in users
                 ]
         return self.user_notify_report
+
+    async def send_billing_messages_in_telegram(self):
+        created_since = datetime.now() - timedelta(minutes=5)
+        limit = 200
+        count = await self.messages_billing_repo.get_messages_count(
+            created_since=created_since.timestamp()
+        )
+        for offset in range(0, count, limit):
+            messages = await self.messages_billing_repo.get_list(
+                created_since=created_since.timestamp(),
+                limit=limit,
+                offset=offset,
+            )
+            [
+                await self.telegram_notify_repo.send_message_billing_in_telegram_group(
+                    message=message
+                )
+                for message in messages
+            ]

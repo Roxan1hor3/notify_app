@@ -48,6 +48,9 @@ class Settings(BaseSettings):
 
     TELEGRAM_BOT_TOKEN: str
 
+    CELERY_BROKER_URL: str
+    BILLING_MESSAGES_TELEGRAM_ID: int
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -87,6 +87,7 @@ class ServiceManager:
                 sender=settings.SMS_SENDER,
                 use_sso=settings.USE_SSO,
                 bot_token=settings.TELEGRAM_BOT_TOKEN,
+                billing_group_chat_id=settings.BILLING_MESSAGES_TELEGRAM_ID,
             )
         return self._notify_service
 
