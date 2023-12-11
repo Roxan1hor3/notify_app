@@ -213,8 +213,6 @@ class NotifyService(BaseService):
             user_billing_messages_data.append(message)
             valid_phone_numbers.append(
                 message.phone_number
-                if message.phone_number.startswith("+")
-                else "+" + message.phone_number
             )
             user_billing_ids.append(message.id)
         telegram_users = await self.telegram_users_repo.get_list(
@@ -330,8 +328,7 @@ class NotifyService(BaseService):
                             "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
-                            "Номер телефона": "38"
-                            + user_id_message_map[user.id].phone_number
+                            "Номер телефона": user_id_message_map[user.id].phone_number
                             if user_id_message_map.get(user.id) is not None
                             else "",
                             "Час обновлення телефона": datetime.fromtimestamp(
