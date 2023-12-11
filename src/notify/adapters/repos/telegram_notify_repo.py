@@ -32,6 +32,6 @@ class TelegramNotifyRepo(BaseRepository):
         await self.telegram_client.send_message(
             chat_id=self.billing_group_chat_id,
             text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
-            f"Текст повідомлення: {message.reason}.\n"
+            f"Текст повідомлення: {message.reason}\n"
             f"Час повідомлення: {datetime.fromtimestamp(message.time).strftime('%Y.%m.%d %H:%M')}.",
         )
