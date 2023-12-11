@@ -36,6 +36,3 @@ class TelegramUsersRepo(BaseMotorRepo):
             }
         ).to_list(length=None)
         return [TelegramUser(**user) for user in results]
-
-    async def send_message_billing_in_telegram_group(self, message):
-        pass

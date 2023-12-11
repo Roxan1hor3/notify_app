@@ -239,8 +239,10 @@ class UserBillingQueryStorage:
             .select(
                 self.us_trf.uid.as_("id"),
                 self.us_trf.submoney.as_("fee"),
-                self.us_trf.startmoney.as_("balance"),
+                self.us.balance,
             )
+            .inner_join(self.us)
+            .on(self.us_trf.uid == self.us.id)
             .limit(1)
             .where(Criterion.all(self._filter(_filter=_filter)))
         )
