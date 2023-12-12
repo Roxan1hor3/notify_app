@@ -24,6 +24,7 @@ from src.notify.telegram_bot.handlers.contacts import contact_router
 from src.notify.telegram_bot.handlers.payment import payment_router
 from src.notify.telegram_bot.handlers.repair_request import repair_request_router
 from src.notify.telegram_bot.handlers.start import start_router
+from src.notify.telegram_bot.handlers.tariffs import tariffs_router
 
 
 async def main():
@@ -49,6 +50,7 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(base_router)
     dp.include_router(contact_router)
+    dp.include_router(tariffs_router)
     dp.include_router(repair_request_router)
     dp.include_router(connection_request_router)
     dp.include_router(payment_router)
