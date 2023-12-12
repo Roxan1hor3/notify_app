@@ -1,9 +1,11 @@
 import logging
 from asyncio import get_running_loop
+from typing import Any, Awaitable, Callable
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import TelegramObject
 
 from src.notify.config import get_settings
 from src.notify.extensions.db import (
@@ -12,8 +14,16 @@ from src.notify.extensions.db import (
 )
 from src.notify.telegram_bot.dependency.services import (
     init_telegram_bot_service_manager,
+    service_manager,
 )
-from src.notify.telegram_bot.handlers.users import router
+from src.notify.telegram_bot.handlers.base import base_router
+from src.notify.telegram_bot.handlers.connection_request import (
+    connection_request_router,
+)
+from src.notify.telegram_bot.handlers.contacts import contact_router
+from src.notify.telegram_bot.handlers.payment import payment_router
+from src.notify.telegram_bot.handlers.repair_request import repair_request_router
+from src.notify.telegram_bot.handlers.start import start_router
 
 
 async def main():
@@ -37,6 +47,23 @@ async def main():
         parse_mode=ParseMode.HTML,
     )
     dp = Dispatcher(storage=MemoryStorage())
-    dp.include_router(router)
+    dp.include_router(base_router)
+    dp.include_router(contact_router)
+    dp.include_router(repair_request_router)
+    dp.include_router(connection_request_router)
+    dp.include_router(payment_router)
+    dp.include_router(start_router)
+
+    @dp.message.outer_middleware()
+    async def add_services_middleware(
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: dict[str, Any],
+    ) -> Any:
+        data["notify_service"] = await service_manager.notify_service
+        data["user_service"] = await service_manager.user_service
+        data["telegram_service"] = await service_manager.telegram_service
+        return await handler(event, data)
+
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

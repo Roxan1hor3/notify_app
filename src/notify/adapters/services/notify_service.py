@@ -14,6 +14,10 @@ from pydantic import ValidationError
 
 from src.notify.adapters.models.message import Message, MessageStatus
 from src.notify.adapters.models.notify import Notify, NotifyServices
+from src.notify.adapters.models.telegram_connection_request import (
+    TelegramConnectionRequest,
+)
+from src.notify.adapters.models.telegram_repair_request import TelegramRepairRequest
 from src.notify.adapters.models.user_billing import (
     UserBillingFilter,
     UserBillingMessageData,
@@ -372,7 +376,30 @@ class NotifyService(BaseService):
             )
             [
                 await self.telegram_notify_repo.send_message_billing_in_telegram_group(
-                    message=message
+                    text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
+                    f"Текст повідомлення: {message.reason}\n"
+                    f"Час повідомлення: {datetime.fromtimestamp(message.time).strftime('%Y.%m.%d %H:%M')}.",
                 )
                 for message in messages
             ]
+
+    async def send_connection_request_notify(
+        self, connection_request: TelegramConnectionRequest
+    ):
+        await self.telegram_notify_repo.send_message_billing_in_telegram_group(
+            text="Нова заявка на підключення.\n"
+            f"ФІО: {connection_request.fio}\n"
+            f"Адрес: {connection_request.address}\n"
+            f"Телефон: {connection_request.phone_number}\n"
+            f"Дата створення: {connection_request.created_at.strftime('%Y.%m.%d %H:%M')}",
+        )
+
+    async def send_repair_request_notify(self, repair_request: TelegramRepairRequest):
+        await self.telegram_notify_repo.send_message_billing_in_telegram_group(
+            text="Нова заявка на ремонт.\n"
+            f"ФІО: {repair_request.fio}\n"
+            f"Адрес: {repair_request.address}\n"
+            f"Телефон: {repair_request.phone_number}\n"
+            f"Дата створення: {repair_request.created_at.strftime('%Y.%m.%d %H:%M')}\n"
+            f"Проблема: {repair_request.problem}",
+        )

@@ -36,3 +36,16 @@ class TelegramUsersRepo(BaseMotorRepo):
             }
         ).to_list(length=None)
         return [TelegramUser(**user) for user in results]
+
+    async def update_user_billing_and_personal_account_id(
+        self, personal_account_id: int, billing_id: int, chat_id: int
+    ):
+        return await self.collection.update_one(
+            filter={"chat_id": chat_id},
+            update={
+                "$set": {
+                    "personal_account_id": personal_account_id,
+                    "billing_id": billing_id,
+                }
+            },
+        )

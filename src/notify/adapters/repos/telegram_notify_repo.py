@@ -1,7 +1,5 @@
 import asyncio
-from datetime import datetime
 
-from src.notify.adapters.models.message_billing import MessageBilling
 from src.notify.adapters.repos.base import BaseRepository
 from src.notify.clients.telegram_client import TelegramClient
 
@@ -28,10 +26,7 @@ class TelegramNotifyRepo(BaseRepository):
         )
         return all(results)
 
-    async def send_message_billing_in_telegram_group(self, message: MessageBilling):
+    async def send_message_billing_in_telegram_group(self, text: str):
         await self.telegram_client.send_message(
-            chat_id=self.billing_group_chat_id,
-            text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
-            f"Текст повідомлення: {message.reason}\n"
-            f"Час повідомлення: {datetime.fromtimestamp(message.time).strftime('%Y.%m.%d %H:%M')}.",
+            chat_id=self.billing_group_chat_id, text=text
         )

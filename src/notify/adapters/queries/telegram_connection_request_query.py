@@ -1,0 +1,2 @@
+class TelegramConnectionRequestQuery:
+    pass
