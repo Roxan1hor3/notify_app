@@ -28,7 +28,7 @@ async def chat_command_group_check(
 async def start_payment_form(msg: Message, state: FSMContext):
     await state.set_state(PhoneNumberForm.phone_number)
     await msg.answer(
-        "Нажміть на кнопку щоб поділитися номером телефона.",
+        "Натисніть на кнопку щоб поділитися номером телефону.",
         reply_markup=PhoneNumberMenu,
     )
 
@@ -48,10 +48,10 @@ async def phone_number_handler(
     )
     await state.clear()
     await msg.answer(
-        text=f"Збережений номер телефона: {msg.contact.phone_number}.\n\r",
+        text=f"Збережений номер телефону: {msg.contact.phone_number}.\n\r",
     )
     await msg.answer(
-        "Нажміть на кнопку для команди боту.",
+        "Натисніть на кнопку для команди боту.",
         reply_markup=StartMenu,
     )
 
@@ -59,7 +59,7 @@ async def phone_number_handler(
 @start_router.message(F.text == "До стартового меню")
 async def to_start_menu_handler(msg: Message):
     await msg.answer(
-        "Нажміть на кнопку для команди боту.",
+        "Натисніть на кнопку для команди боту.",
         reply_markup=StartMenu,
     )
 

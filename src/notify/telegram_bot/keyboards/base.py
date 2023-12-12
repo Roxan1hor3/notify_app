@@ -2,7 +2,7 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 PhoneNumberWithCancelMenu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Поділитись номером телефона", request_contact=True)],
+        [KeyboardButton(text="Поділитись номером телефону", request_contact=True)],
         [KeyboardButton(text="Відмінити")],
     ],
     one_time_keyboard=True,
@@ -10,7 +10,7 @@ PhoneNumberWithCancelMenu = ReplyKeyboardMarkup(
 )
 PhoneNumberMenu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Поділитись номером телефона", request_contact=True)],
+        [KeyboardButton(text="Поділитись номером телефону", request_contact=True)],
     ],
     one_time_keyboard=True,
     resize_keyboard=True,

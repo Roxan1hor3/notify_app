@@ -36,7 +36,7 @@ async def fio_handler(msg: Message, state: FSMContext):
     await state.update_data({"fio": msg.text})
     await state.set_state(ConnectionRequestForm.phone_number)
     await msg.answer(
-        "Нажміть на кнопку щоб поділитися номером телефона.\n\r"
+        "Натисніть на кнопку щоб поділитися номером телефону.\n\r"
         "Або введіть самостійно у форматі +380999999999.\n\r",
         reply_markup=PhoneNumberWithCancelMenu,
     )
@@ -47,7 +47,7 @@ async def phone_number_contact_handler(msg: Message, state: FSMContext):
     await state.update_data({"phone_number": msg.contact.phone_number})
     await state.set_state(ConnectionRequestForm.address)
     await msg.answer(
-        "Введіть свій адрес.\n\r" "Наприклад: місто Дубровиця вулиця Шкільна 23.\n\r",
+        "Введіть свою адресy.\n\r" "Наприклад: місто Дубровиця вулиця Шкільна 23.\n\r",
         reply_markup=CancelMenu,
     )
 
@@ -57,7 +57,7 @@ async def phone_number_handler(msg: Message, state: FSMContext):
     await state.update_data({"phone_number": msg.text})
     await state.set_state(ConnectionRequestForm.address)
     await msg.answer(
-        "Введіть свій адрес.\n\r" "Наприклад: місто Дубровиця вулиця Шкільна 23.\n\r",
+        "Введіть свою адресy.\n\r" "Наприклад: місто Дубровиця вулиця Шкільна 23.\n\r",
         reply_markup=CancelMenu,
     )
 

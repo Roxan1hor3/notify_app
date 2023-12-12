@@ -31,8 +31,8 @@ class UserService(BaseService):
         "Баланс",
         "Пакет",
         "Коментарій",
-        "Номер телефона",
-        "Час обновлення телефона",
+        "Номер телефону",
+        "Час обновлення телефону",
         "Сирійний номер ONU",
         "Час обновлення сирійного номера ONU",
         "MAC адрес",
@@ -89,8 +89,8 @@ class UserService(BaseService):
                             "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
-                            "Номер телефона": "38" + user.phone_number,
-                            "Час обновлення телефона": datetime.fromtimestamp(
+                            "Номер телефону": "38" + user.phone_number,
+                            "Час обновлення телефону": datetime.fromtimestamp(
                                 user.phone_number_time
                             ).strftime("%Y-%m-%d %H:%M"),
                             "Сирійний номер ONU": user.sn_onu,

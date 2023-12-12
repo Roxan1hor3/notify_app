@@ -96,7 +96,7 @@ class BillingPacket(BaseModel):
 
 class UserBillingMessageData(BaseModel):
     id: Annotated[int, Field(alias="Абонент ID")]
-    phone_number: Annotated[NaNToEmptyStr, Field(alias="Номер телефона")]
+    phone_number: Annotated[NaNToEmptyStr, Field(alias="Номер телефону")]
     status: MessageStatus | None = None
 
     @model_validator(mode="after")

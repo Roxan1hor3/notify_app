@@ -56,8 +56,8 @@ class NotifyService(BaseService):
         "Баланс",
         "Пакет",
         "Коментарій",
-        "Номер телефона",
-        "Час обновлення телефона",
+        "Номер телефону",
+        "Час обновлення телефону",
         "Сирійний номер ONU",
         "Час обновлення сирійного номера ONU",
         "MAC адрес",
@@ -284,7 +284,7 @@ class NotifyService(BaseService):
             for row in list_csv_reader:
                 if (
                     int(row.get("Абонент ID")) in map_billing_id_to_chat_id.keys()
-                    or row.get("Номер телефона").replace("+", "")
+                    or row.get("Номер телефону").replace("+", "")
                     in map_phone_number_to_chat_id.keys()
                 ):
                     writer.writerow({**row, "Статус відправки": MessageStatus.SANDED})
@@ -337,10 +337,10 @@ class NotifyService(BaseService):
                             "Баланс": round(user.balance),
                             "Пакет": user.packet_name,
                             "Коментарій": user.comment,
-                            "Номер телефона": user_id_message_map[user.id].phone_number
+                            "Номер телефону": user_id_message_map[user.id].phone_number
                             if user_id_message_map.get(user.id) is not None
                             else "",
-                            "Час обновлення телефона": datetime.fromtimestamp(
+                            "Час обновлення телефону": datetime.fromtimestamp(
                                 user.phone_number_time
                             ).strftime("%Y-%m-%d %H:%M"),
                             "Сирійний номер ONU": user.sn_onu,
