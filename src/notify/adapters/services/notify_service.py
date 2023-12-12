@@ -388,7 +388,7 @@ class NotifyService(BaseService):
     ):
         await self.telegram_notify_repo.send_message_billing_in_telegram_group(
             text="Нова заявка на підключення.\n"
-            f"ФІО: {connection_request.fio}\n"
+            f"ПІБ: {connection_request.fio}\n"
             f"Адрес: {connection_request.address}\n"
             f"Телефон: {connection_request.phone_number}\n"
             f"Дата створення: {connection_request.created_at.strftime('%Y.%m.%d %H:%M')}",
@@ -397,7 +397,7 @@ class NotifyService(BaseService):
     async def send_repair_request_notify(self, repair_request: TelegramRepairRequest):
         await self.telegram_notify_repo.send_message_billing_in_telegram_group(
             text="Нова заявка на ремонт.\n"
-            f"ФІО: {repair_request.fio}\n"
+            f"ПІБ: {repair_request.fio}\n"
             f"Адрес: {repair_request.address}\n"
             f"Телефон: {repair_request.phone_number}\n"
             f"Дата створення: {repair_request.created_at.strftime('%Y.%m.%d %H:%M')}\n"

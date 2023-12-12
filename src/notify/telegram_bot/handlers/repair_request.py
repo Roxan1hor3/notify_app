@@ -27,7 +27,7 @@ async def chat_command_group_check(
 @repair_request_router.message(F.text == "Заявка на ремонт")
 async def repair_request_handler(msg: Message, state: FSMContext):
     await state.set_state(RepairRequestForm.fio)
-    await msg.answer(text=f"Введіть будь ласка ФІО.", reply_markup=CancelMenu)
+    await msg.answer(text=f"Введіть будь ласка ПІБ.", reply_markup=CancelMenu)
 
 
 @repair_request_router.message(RepairRequestForm.fio)
@@ -87,7 +87,7 @@ async def address_handler(
     await notify_service.send_repair_request_notify(repair_request=repair_request)
     await msg.answer(
         "Ваша заявка відправлена.\n\r"
-        f"ФІО: {repair_request.fio}\n\r"
+        f"ПІБ: {repair_request.fio}\n\r"
         f"Адрес: {repair_request.address}\n\r"
         f"Телефон: {repair_request.phone_number}\n\r"
         f"Дата створення: {repair_request.created_at}\n\r"

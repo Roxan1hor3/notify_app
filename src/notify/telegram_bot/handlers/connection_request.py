@@ -28,7 +28,7 @@ async def chat_command_group_check(
 @connection_request_router.message(F.text == "Заявка на підключення")
 async def connection_request_handler(msg: Message, state: FSMContext):
     await state.set_state(ConnectionRequestForm.fio)
-    await msg.answer(text=f"Введіть будь ласка ФІО.", reply_markup=CancelMenu)
+    await msg.answer(text=f"Введіть будь ласка ПІБ.", reply_markup=CancelMenu)
 
 
 @connection_request_router.message(ConnectionRequestForm.fio)
@@ -82,7 +82,7 @@ async def address_handler(
     )
     await msg.answer(
         "Ваша заявка відправлена.\n\r"
-        f"ФІО: {connection_request.fio}\n\r"
+        f"ПІБ: {connection_request.fio}\n\r"
         f"Адрес: {connection_request.address}\n\r"
         f"Телефон: {connection_request.phone_number}\n\r"
         f"Дата створення: {connection_request.created_at}\n\r"
