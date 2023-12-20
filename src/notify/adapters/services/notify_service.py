@@ -362,8 +362,7 @@ class NotifyService(BaseService):
                 ]
         return self.user_notify_report
 
-    async def send_billing_messages_in_telegram(self):
-        created_since = datetime.now() - timedelta(minutes=5)
+    async def send_billing_messages_in_telegram(self, created_since: datetime = datetime.now() - timedelta(minutes=5)):
         limit = 200
         count = await self.messages_billing_repo.get_messages_count(
             created_since=created_since.timestamp()
