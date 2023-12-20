@@ -49,7 +49,7 @@ def send_messages():
             billing_group_chat_id=settings.BILLING_MESSAGES_TELEGRAM_ID,
         )
     )
-    service.send_billing_messages_in_telegram(created_since=created_since)
+    loop.run_until_complete(service.send_billing_messages_in_telegram(created_since=created_since))
 
 
 if __name__ == "__main__":
