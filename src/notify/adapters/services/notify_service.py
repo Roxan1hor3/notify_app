@@ -387,14 +387,14 @@ class NotifyService(BaseService):
             )
             logger.info("Messages count %s", len(messages))
             logger.info("Messages %s", str(messages))
-            # [
-            #     await self.telegram_notify_repo.send_message_billing_in_telegram_group(
-            #         text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
-            #         f"Текст повідомлення: {message.reason}\n"
-            #         f"Час повідомлення: {datetime.fromtimestamp(message.time).strftime('%Y.%m.%d %H:%M')}.",
-            #     )
-            #     for message in messages
-            # ]
+            [
+                await self.telegram_notify_repo.send_message_billing_in_telegram_group(
+                    text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
+                    f"Текст повідомлення: {message.reason}\n"
+                    f"Час повідомлення: {datetime.fromtimestamp(message.time).strftime('%Y.%m.%d %H:%M')}.",
+                )
+                for message in messages
+            ]
 
     async def send_connection_request_notify(
         self, connection_request: TelegramConnectionRequest
