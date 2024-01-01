@@ -19,7 +19,7 @@ class MessageBillingQueryStorage:
             .on(self.ps.mid == self.us.id)
             .where(
                 (self.ps.type == 30)
-                & (self.ps.category == 491)
+                & ((self.ps.category == 491) | (self.ps.category == 492))
                 & (self.ps.time > created_since)
             )
             .limit(limit)
@@ -36,7 +36,7 @@ class MessageBillingQueryStorage:
             .on(self.ps.mid == self.us.id)
             .where(
                 (self.ps.type == 30)
-                & (self.ps.category == 491)
+                & ((self.ps.category == 491) | (self.ps.category == 492))
                 & (self.ps.time > created_since)
             )
             .distinct()

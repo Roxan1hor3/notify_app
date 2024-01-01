@@ -369,12 +369,15 @@ class NotifyService(BaseService):
         count = await self.messages_billing_repo.get_messages_count(
             created_since=created_since.timestamp()
         )
+        logger.info("Create since %s", created_since)
+        logger.info("Create since timestamp %s", created_since.timestamp())
         for offset in range(0, count, limit):
             messages = await self.messages_billing_repo.get_list(
                 created_since=created_since.timestamp(),
                 limit=limit,
                 offset=offset,
             )
+            logger.info("Messages count %s", len(messages))
             [
                 await self.telegram_notify_repo.send_message_billing_in_telegram_group(
                     text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
