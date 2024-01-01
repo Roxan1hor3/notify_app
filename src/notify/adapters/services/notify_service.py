@@ -378,6 +378,7 @@ class NotifyService(BaseService):
                 offset=offset,
             )
             logger.info("Messages count %s", len(messages))
+            logger.info("Messages %s", str(messages))
             [
                 await self.telegram_notify_repo.send_message_billing_in_telegram_group(
                     text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
