@@ -31,12 +31,19 @@ def users_update():
 
 @app.command(name="send_billing_messages")
 def send_messages():
-    print("Enter date to create in format: yyyy-mm-dd")
+    print("Enter date to create from in format: %Y-%m-%d %H:M%:%")
     local = pytz.timezone(pytz.utc.zone)
     naive_updated_since = input()
-    naive_updated_since = datetime.strptime(naive_updated_since, "%Y-%m-%d")
+    naive_updated_since = datetime.strptime(naive_updated_since, "%Y-%m-%d %H:M%:%")
     local_updated_since = local.localize(naive_updated_since, is_dst=None)
-    created_since = local_updated_since.astimezone(pytz.utc)
+    created_since_from = local_updated_since.astimezone(pytz.utc)
+
+    print("Enter date to create to in format: %Y-%m-%d %H:M%:%")
+    local = pytz.timezone(pytz.utc.zone)
+    naive_updated_since = input()
+    naive_updated_since = datetime.strptime(naive_updated_since, "%Y-%m-%d %H:M%:%S")
+    local_updated_since = local.localize(naive_updated_since, is_dst=None)
+    created_since_to = local_updated_since.astimezone(pytz.utc)
     service = loop.run_until_complete(
         NotifyService.create_service(
             my_sql_connection_pool=db_my_sql_pool,
@@ -49,7 +56,11 @@ def send_messages():
             billing_group_chat_id=settings.BILLING_MESSAGES_TELEGRAM_ID,
         )
     )
-    loop.run_until_complete(service.send_billing_messages_in_telegram(created_since=created_since))
+    loop.run_until_complete(
+        service.send_billing_messages_in_telegram(
+            created_since_from=created_since_from, created_since_to=created_since_to
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -10,22 +10,32 @@ class MessagesBillingRepo(BaseAioMySqlRepo):
     query_storage = MessageBillingQueryStorage()
 
     async def get_list(
-        self, created_since: float, limit: int, offset: int
+        self,
+        created_since_from: float,
+        created_since_to: float,
+        limit: int,
+        offset: int,
     ) -> list[MessageBilling]:
         async with self.get_cursor() as cur:
             await cur.execute(
                 self.query_storage.get_messages(
-                    created_since=created_since, limit=limit, offset=offset
+                    created_since_from=created_since_from,
+                    created_since_to=created_since_to,
+                    limit=limit,
+                    offset=offset,
                 ).get_sql()
             )
             results = await cur.fetchall()
             return [self.MODEL(**res) for res in results]
 
-    async def get_messages_count(self, created_since: float) -> int:
+    async def get_messages_count(
+        self, created_since_from: float, created_since_to: float
+    ) -> int:
         async with self.get_cursor() as cur:
             await cur.execute(
                 self.query_storage.get_messages_count(
-                    created_since=created_since
+                    created_since_from=created_since_from,
+                    created_since_to=created_since_to,
                 ).get_sql()
             )
             result = await cur.fetchall()

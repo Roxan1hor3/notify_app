@@ -362,31 +362,39 @@ class NotifyService(BaseService):
                 ]
         return self.user_notify_report
 
-    async def send_billing_messages_in_telegram(self, created_since: datetime = None):
-        if created_since is None:
-            created_since = datetime.now() - timedelta(minutes=5)
+    async def send_billing_messages_in_telegram(
+        self, created_since_from: datetime = None, created_since_to: datetime = None
+    ):
+        if created_since_from is None or created_since_to:
+            now = datetime.now()
+            created_since_from = datetime.now() - timedelta(minutes=5)
+            created_since_to = now
         limit = 200
         count = await self.messages_billing_repo.get_messages_count(
-            created_since=created_since.timestamp()
+            created_since_from=created_since_from.timestamp(),
+            created_since_to=created_since_to.timestamp(),
         )
-        logger.info("Create since %s", created_since)
-        logger.info("Create since timestamp %s", created_since.timestamp())
+        logger.info("Create since from %s", created_since_from)
+        logger.info("Create since from timestamp %s", created_since_from.timestamp())
+        logger.info("Create since to %s", created_since_to)
+        logger.info("Create since to timestamp %s", created_since_to.timestamp())
         for offset in range(0, count, limit):
             messages = await self.messages_billing_repo.get_list(
-                created_since=created_since.timestamp(),
+                created_since_from=created_since_from.timestamp(),
+                created_since_to=created_since_to.timestamp(),
                 limit=limit,
                 offset=offset,
             )
             logger.info("Messages count %s", len(messages))
             logger.info("Messages %s", str(messages))
-            [
-                await self.telegram_notify_repo.send_message_billing_in_telegram_group(
-                    text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
-                    f"Текст повідомлення: {message.reason}\n"
-                    f"Час повідомлення: {datetime.fromtimestamp(message.time).strftime('%Y.%m.%d %H:%M')}.",
-                )
-                for message in messages
-            ]
+            # [
+            #     await self.telegram_notify_repo.send_message_billing_in_telegram_group(
+            #         text=f"Повідомлення в білінг від {message.fio}, id: {message.id}.\n"
+            #         f"Текст повідомлення: {message.reason}\n"
+            #         f"Час повідомлення: {datetime.fromtimestamp(message.time).strftime('%Y.%m.%d %H:%M')}.",
+            #     )
+            #     for message in messages
+            # ]
 
     async def send_connection_request_notify(
         self, connection_request: TelegramConnectionRequest

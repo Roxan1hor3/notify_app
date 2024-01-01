@@ -5,7 +5,13 @@ class MessageBillingQueryStorage:
     us = Table("users")
     ps = Table("pays")
 
-    def get_messages(self, created_since: float, limit: int, offset: int):
+    def get_messages(
+        self,
+        created_since_from: float,
+        created_since_to: float,
+        limit: int,
+        offset: int,
+    ):
         query = (
             MySQLQuery.from_(self.ps)
             .select(
@@ -20,7 +26,8 @@ class MessageBillingQueryStorage:
             .where(
                 (self.ps.type == 30)
                 & ((self.ps.category == 491) | (self.ps.category == 492))
-                & (self.ps.time > created_since)
+                & (self.ps.time > created_since_from)
+                & (self.ps.time < created_since_to)
             )
             .limit(limit)
             .offset(offset)
@@ -28,7 +35,7 @@ class MessageBillingQueryStorage:
         )
         return query
 
-    def get_messages_count(self, created_since: float):
+    def get_messages_count(self, created_since_from: float, created_since_to: float):
         query = (
             MySQLQuery.from_(self.ps)
             .select(functions.Count("*").as_("count"))
@@ -37,7 +44,8 @@ class MessageBillingQueryStorage:
             .where(
                 (self.ps.type == 30)
                 & ((self.ps.category == 491) | (self.ps.category == 492))
-                & (self.ps.time > created_since)
+                & (self.ps.time > created_since_from)
+                & (self.ps.time < created_since_to)
             )
             .distinct()
         )
